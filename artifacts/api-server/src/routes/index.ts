@@ -11,6 +11,7 @@ import customersRouter from "./customers";
 import analyticsRouter from "./analytics";
 import chatRouter from "./chat";
 import knowledgeRouter from "./knowledge";
+import workspaceRouter from "./workspace";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(customersRouter);
 router.use(analyticsRouter);
 router.use(chatRouter);
 router.use(knowledgeRouter);
+router.use(workspaceRouter);
 
 export default router;

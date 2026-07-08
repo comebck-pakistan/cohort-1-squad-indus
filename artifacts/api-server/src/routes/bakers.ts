@@ -181,6 +181,7 @@ router.get("/bakers/:bakerId/agent-config", async (req, res): Promise<void> => {
     blockedTopics: (conf.blockedTopics as string[]) ?? [],
     escalateKeywords: (conf.escalateKeywords as string[]) ?? [],
     autoReplyEnabled: (conf.autoReplyEnabled as boolean) ?? true,
+    customResponses: (conf.customResponses as Array<{ trigger: string; response: string }>) ?? [],
   });
 });
 
@@ -207,7 +208,15 @@ router.put("/bakers/:bakerId/agent-config", async (req, res): Promise<void> => {
   if (body.autoReplyEnabled !== undefined) agentConfigUpdate.autoReplyEnabled = body.autoReplyEnabled;
   if (body.customResponses !== undefined) agentConfigUpdate.customResponses = body.customResponses;
 
-  const update: Record<string, unknown> = { agentConfig: agentConfigUpdate };
+  const [existing] = await db.select().from(bakersTable).where(eq(bakersTable.id, bakerId));
+  if (!existing) { res.status(404).json({ error: "Baker not found" }); return; }
+
+  const mergedAgentConfig = {
+    ...((existing.agentConfig ?? {}) as Record<string, unknown>),
+    ...agentConfigUpdate,
+  };
+
+  const update: Record<string, unknown> = { agentConfig: mergedAgentConfig };
   if (body.agentActive !== undefined) update.agentActive = body.agentActive;
   if (body.whatsappAgentEnabled !== undefined) update.whatsappAgentEnabled = body.whatsappAgentEnabled;
   if (body.instagramAgentEnabled !== undefined) update.instagramAgentEnabled = body.instagramAgentEnabled;
@@ -228,6 +237,7 @@ router.put("/bakers/:bakerId/agent-config", async (req, res): Promise<void> => {
     blockedTopics: (conf.blockedTopics as string[]) ?? [],
     escalateKeywords: (conf.escalateKeywords as string[]) ?? [],
     autoReplyEnabled: (conf.autoReplyEnabled as boolean) ?? true,
+    customResponses: (conf.customResponses as Array<{ trigger: string; response: string }>) ?? [],
   });
 });
 

@@ -8,3 +8,4 @@ export * from "./chat_messages";
 export * from "./notifications";
 export * from "./conversation_memory";
 export * from "./knowledge_chunks";
+export * from "./baker_workspace";

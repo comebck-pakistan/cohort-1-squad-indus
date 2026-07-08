@@ -1,4 +1,5 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { DashboardWorkspace } from "@/components/dashboard/workspace-panel";
 import { useGetBakerStats } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
 
@@ -30,6 +31,7 @@ export default function DashboardHome() {
             </div>
           </div>
         )}
+        <DashboardWorkspace />
       </div>
     </DashboardLayout>
   );

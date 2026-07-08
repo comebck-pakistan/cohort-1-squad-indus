@@ -7,6 +7,7 @@ import {
   customersTable,
   chatMessagesTable,
   cartItemsTable,
+  bakerGoalsTable,
 } from "@workspace/db/schema";
 import { sql } from "drizzle-orm";
 import { reindexBakerKnowledge } from "./lib/rag/indexer";
@@ -15,7 +16,7 @@ async function seed() {
   console.log("Seeding Sweet Tooth database...");
 
   // Clear all tables in reverse dependency order
-  await db.execute(sql`TRUNCATE knowledge_chunks, chat_messages, cart_items, reviews, customers, orders, products, bakers RESTART IDENTITY CASCADE`);
+  await db.execute(sql`TRUNCATE baker_reminders, baker_notes, baker_goals, knowledge_chunks, chat_messages, cart_items, reviews, customers, orders, products, bakers RESTART IDENTITY CASCADE`);
 
   // --- Bakers ---
   const [sana] = await db.insert(bakersTable).values({
@@ -626,6 +627,15 @@ async function seed() {
     const indexed = await reindexBakerKnowledge(baker.id);
     console.log(`RAG indexed ${indexed.chunks} chunks for ${baker.businessName} (${indexed.provider})`);
   }
+
+  await db.insert(bakerGoalsTable).values({
+    bakerId: sana.id,
+    label: "Monthly orders",
+    metric: "orders",
+    targetValue: 50,
+    period: "monthly",
+  });
+  console.log("Default baker goal seeded for Sana's Sweet Studio");
 
   console.log("Seeding complete!");
 }

@@ -67,6 +67,7 @@ export default function AgentHub() {
     customGreeting?: string;
     blockedTopics?: string[];
     escalateKeywords?: string[];
+    customResponses?: Array<{ trigger: string; response: string }>;
     whatsappAgentEnabled?: boolean;
     instagramAgentEnabled?: boolean;
     metaWebhookToken?: string;
@@ -120,6 +121,28 @@ export default function AgentHub() {
     setLocalConfig(prev => ({
       ...prev,
       escalateKeywords: (merged.escalateKeywords ?? []).filter(k => k !== kw),
+    }));
+  };
+
+  const customResponses = merged.customResponses ?? [];
+
+  const addCustomResponse = () => {
+    if (!newCustomTrigger.trim() || !newCustomResponse.trim()) return;
+    setLocalConfig(prev => ({
+      ...prev,
+      customResponses: [
+        ...customResponses,
+        { trigger: newCustomTrigger.trim(), response: newCustomResponse.trim() },
+      ],
+    }));
+    setNewCustomTrigger("");
+    setNewCustomResponse("");
+  };
+
+  const removeCustomResponse = (trigger: string) => {
+    setLocalConfig(prev => ({
+      ...prev,
+      customResponses: customResponses.filter(cr => cr.trigger !== trigger),
     }));
   };
 
@@ -247,6 +270,49 @@ export default function AgentHub() {
                   Add
                 </button>
               </div>
+            </div>
+
+            {/* Custom trigger → response */}
+            <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <MessageSquare className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold">Custom Responses</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">Teach the agent exact replies when buyers mention specific words.</p>
+              <div className="space-y-2">
+                {customResponses.map((cr) => (
+                  <div key={cr.trigger} className="p-3 bg-muted/40 rounded-lg text-sm">
+                    <div className="flex justify-between items-start gap-2">
+                      <p><span className="font-medium">If:</span> "{cr.trigger}"</p>
+                      <button onClick={() => removeCustomResponse(cr.trigger)} className="text-muted-foreground hover:text-destructive">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <p className="text-muted-foreground mt-1"><span className="font-medium text-foreground">Reply:</span> {cr.response}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  value={newCustomTrigger}
+                  onChange={e => setNewCustomTrigger(e.target.value)}
+                  placeholder="Trigger word (e.g. ramadan)"
+                  className="px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                />
+                <input
+                  value={newCustomResponse}
+                  onChange={e => setNewCustomResponse(e.target.value)}
+                  placeholder="Agent reply"
+                  className="px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                />
+              </div>
+              <button
+                onClick={addCustomResponse}
+                className="flex items-center gap-1 px-3 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/20"
+              >
+                <Plus className="w-4 h-4" />
+                Add custom response
+              </button>
             </div>
 
             {/* Escalation keywords */}

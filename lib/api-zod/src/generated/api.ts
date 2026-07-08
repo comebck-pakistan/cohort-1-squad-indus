@@ -1100,6 +1100,45 @@ export const UpdateAgentConfigResponse = zod.object({
 
 
 /**
+ * @summary Rebuild RAG embeddings from products and policies
+ */
+export const ReindexBakerKnowledgeParams = zod.object({
+  "bakerId": zod.coerce.number()
+})
+
+export const ReindexBakerKnowledgeResponse = zod.object({
+  "bakerId": zod.number(),
+  "chunksIndexed": zod.number(),
+  "embeddingProvider": zod.enum(['openai', 'local']),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Query baker knowledge index (debug / preview)
+ */
+export const QueryBakerKnowledgeParams = zod.object({
+  "bakerId": zod.coerce.number()
+})
+
+export const QueryBakerKnowledgeBody = zod.object({
+  "query": zod.string()
+})
+
+export const QueryBakerKnowledgeResponse = zod.object({
+  "context": zod.string(),
+  "chunks": zod.array(zod.object({
+  "id": zod.number(),
+  "content": zod.string(),
+  "sourceType": zod.string(),
+  "sourceId": zod.number().nullish(),
+  "score": zod.number(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+}))
+})
+
+
+/**
  * @summary List all conversations for a baker
  */
 export const ListConversationsParams = zod.object({

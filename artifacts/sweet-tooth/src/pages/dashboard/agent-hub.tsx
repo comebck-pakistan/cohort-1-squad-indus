@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import {
   useGetAgentConfig,
   useUpdateAgentConfig,
   useListConversations,
   useGetChatHistory,
+  useReindexBakerKnowledge,
   getGetAgentConfigQueryKey,
 } from "@workspace/api-client-react";
+import type { KnowledgeReindexResult } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
-import { reindexBakerKnowledge, type KnowledgeReindexResult } from "@/lib/knowledge-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
@@ -34,15 +34,16 @@ export default function AgentHub() {
   const [reindexResult, setReindexResult] = useState<KnowledgeReindexResult | null>(null);
   const [reindexError, setReindexError] = useState<string | null>(null);
 
-  const reindexKnowledge = useMutation({
-    mutationFn: () => reindexBakerKnowledge(bakerId),
-    onSuccess: (result) => {
-      setReindexResult(result);
-      setReindexError(null);
-    },
-    onError: (error: Error) => {
-      setReindexError(error.message);
-      setReindexResult(null);
+  const reindexKnowledge = useReindexBakerKnowledge({
+    mutation: {
+      onSuccess: (result) => {
+        setReindexResult(result);
+        setReindexError(null);
+      },
+      onError: (error) => {
+        setReindexError(error.message);
+        setReindexResult(null);
+      },
     },
   });
 
@@ -302,7 +303,7 @@ export default function AgentHub() {
                   </div>
                 </div>
                 <button
-                  onClick={() => reindexKnowledge.mutate()}
+                  onClick={() => reindexKnowledge.mutate({ bakerId })}
                   disabled={reindexKnowledge.isPending || !bakerId}
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
                 >

@@ -41,6 +41,9 @@ import type {
   GetCartParams,
   GetFeaturedBakersParams,
   HealthStatus,
+  KnowledgeQueryInput,
+  KnowledgeQueryResult,
+  KnowledgeReindexResult,
   ListBakersParams,
   ListCustomersParams,
   ListOrdersParams,
@@ -2982,6 +2985,149 @@ export const useUpdateAgentConfig = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateAgentConfigMutationOptions(options));
+    }
+
+export const getReindexBakerKnowledgeUrl = (bakerId: number,) => {
+
+
+
+
+  return `/api/bakers/${bakerId}/knowledge/reindex`
+}
+
+/**
+ * @summary Rebuild RAG embeddings from products and policies
+ */
+export const reindexBakerKnowledge = async (bakerId: number, options?: RequestInit): Promise<KnowledgeReindexResult> => {
+
+  return customFetch<KnowledgeReindexResult>(getReindexBakerKnowledgeUrl(bakerId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getReindexBakerKnowledgeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reindexBakerKnowledge>>, TError,{bakerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reindexBakerKnowledge>>, TError,{bakerId: number}, TContext> => {
+
+const mutationKey = ['reindexBakerKnowledge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reindexBakerKnowledge>>, {bakerId: number}> = (props) => {
+          const {bakerId} = props ?? {};
+
+          return  reindexBakerKnowledge(bakerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReindexBakerKnowledgeMutationResult = NonNullable<Awaited<ReturnType<typeof reindexBakerKnowledge>>>
+
+    export type ReindexBakerKnowledgeMutationError = ErrorType<void>
+
+    /**
+ * @summary Rebuild RAG embeddings from products and policies
+ */
+export const useReindexBakerKnowledge = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reindexBakerKnowledge>>, TError,{bakerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reindexBakerKnowledge>>,
+        TError,
+        {bakerId: number},
+        TContext
+      > => {
+      return useMutation(getReindexBakerKnowledgeMutationOptions(options));
+    }
+
+export const getQueryBakerKnowledgeUrl = (bakerId: number,) => {
+
+
+
+
+  return `/api/bakers/${bakerId}/knowledge/query`
+}
+
+/**
+ * @summary Query baker knowledge index (debug / preview)
+ */
+export const queryBakerKnowledge = async (bakerId: number,
+    knowledgeQueryInput: KnowledgeQueryInput, options?: RequestInit): Promise<KnowledgeQueryResult> => {
+
+  return customFetch<KnowledgeQueryResult>(getQueryBakerKnowledgeUrl(bakerId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(knowledgeQueryInput)
+  }
+);}
+
+
+
+
+
+export const getQueryBakerKnowledgeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof queryBakerKnowledge>>, TError,{bakerId: number;data: BodyType<KnowledgeQueryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof queryBakerKnowledge>>, TError,{bakerId: number;data: BodyType<KnowledgeQueryInput>}, TContext> => {
+
+const mutationKey = ['queryBakerKnowledge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof queryBakerKnowledge>>, {bakerId: number;data: BodyType<KnowledgeQueryInput>}> = (props) => {
+          const {bakerId,data} = props ?? {};
+
+          return  queryBakerKnowledge(bakerId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type QueryBakerKnowledgeMutationResult = NonNullable<Awaited<ReturnType<typeof queryBakerKnowledge>>>
+    export type QueryBakerKnowledgeMutationBody = BodyType<KnowledgeQueryInput>
+    export type QueryBakerKnowledgeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Query baker knowledge index (debug / preview)
+ */
+export const useQueryBakerKnowledge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof queryBakerKnowledge>>, TError,{bakerId: number;data: BodyType<KnowledgeQueryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof queryBakerKnowledge>>,
+        TError,
+        {bakerId: number;data: BodyType<KnowledgeQueryInput>},
+        TContext
+      > => {
+      return useMutation(getQueryBakerKnowledgeMutationOptions(options));
     }
 
 export const getListConversationsUrl = (bakerId: number,) => {

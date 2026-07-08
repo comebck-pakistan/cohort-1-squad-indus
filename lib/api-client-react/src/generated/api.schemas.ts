@@ -443,6 +443,42 @@ export interface AgentConfigInput {
   autoReplyEnabled?: boolean;
 }
 
+export type KnowledgeReindexResultEmbeddingProvider = typeof KnowledgeReindexResultEmbeddingProvider[keyof typeof KnowledgeReindexResultEmbeddingProvider];
+
+
+export const KnowledgeReindexResultEmbeddingProvider = {
+  openai: 'openai',
+  local: 'local',
+} as const;
+
+export interface KnowledgeReindexResult {
+  bakerId: number;
+  chunksIndexed: number;
+  embeddingProvider: KnowledgeReindexResultEmbeddingProvider;
+  message: string;
+}
+
+export interface KnowledgeQueryInput {
+  query: string;
+}
+
+export type KnowledgeChunkHitMetadata = { [key: string]: unknown };
+
+export interface KnowledgeChunkHit {
+  id: number;
+  content: string;
+  sourceType: string;
+  /** @nullable */
+  sourceId?: number | null;
+  score: number;
+  metadata?: KnowledgeChunkHitMetadata;
+}
+
+export interface KnowledgeQueryResult {
+  context: string;
+  chunks: KnowledgeChunkHit[];
+}
+
 export type GetFeaturedBakersParams = {
 city?: string;
 area?: string;

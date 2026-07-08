@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import {
   useGetAgentConfig,
@@ -8,12 +9,13 @@ import {
   getGetAgentConfigQueryKey,
 } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
+import { reindexBakerKnowledge, type KnowledgeReindexResult } from "@/lib/knowledge-api";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   Bot, MessageSquare, Instagram, Phone, ChevronRight,
   Plus, X, Save, AlertTriangle, CheckCircle, Zap,
-  Eye, Settings, Users, ArrowLeft,
+  Eye, Settings, Users, ArrowLeft, Database, RefreshCw,
 } from "lucide-react";
 
 type Tab = "built-in" | "whatsapp" | "instagram" | "conversations";
@@ -29,6 +31,20 @@ export default function AgentHub() {
   const [newCustomResponse, setNewCustomResponse] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [reindexResult, setReindexResult] = useState<KnowledgeReindexResult | null>(null);
+  const [reindexError, setReindexError] = useState<string | null>(null);
+
+  const reindexKnowledge = useMutation({
+    mutationFn: () => reindexBakerKnowledge(bakerId),
+    onSuccess: (result) => {
+      setReindexResult(result);
+      setReindexError(null);
+    },
+    onError: (error: Error) => {
+      setReindexError(error.message);
+      setReindexResult(null);
+    },
+  });
 
   const { data: config, isLoading: configLoading } = useGetAgentConfig(bakerId, {
     query: { enabled: !!bakerId, queryKey: getGetAgentConfigQueryKey(bakerId) },
@@ -269,6 +285,52 @@ export default function AgentHub() {
                   Add
                 </button>
               </div>
+            </div>
+
+            {/* Knowledge RAG index */}
+            <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Database className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Knowledge Base (RAG)</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Rebuild embeddings from your menu, policies, and delivery areas so the agent answers smarter questions.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => reindexKnowledge.mutate()}
+                  disabled={reindexKnowledge.isPending || !bakerId}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+                >
+                  <RefreshCw className={`w-4 h-4 ${reindexKnowledge.isPending ? "animate-spin" : ""}`} />
+                  {reindexKnowledge.isPending ? "Reindexing..." : "Reindex Knowledge"}
+                </button>
+              </div>
+
+              {reindexResult && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                  <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>
+                    Indexed <strong>{reindexResult.chunksIndexed}</strong> chunks using{" "}
+                    <strong>{reindexResult.embeddingProvider}</strong> embeddings.
+                  </p>
+                </div>
+              )}
+
+              {reindexError && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{reindexError}</p>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Run this after adding products or changing COD/delivery policies. Seed also reindexes automatically.
+              </p>
             </div>
 
             {/* Save button */}

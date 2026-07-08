@@ -791,6 +791,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentConfig"
 
+  # ── KNOWLEDGE RAG ──────────────────────────────────────────────────────────────
+  /bakers/{bakerId}/knowledge/reindex:
+    post:
+      operationId: reindexBakerKnowledge
+      tags: [knowledge]
+      summary: Rebuild RAG embeddings from products and policies
+      parameters:
+        - name: bakerId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Reindex result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeReindexResult"
+        "404":
+          description: Baker not found
+
+  /bakers/{bakerId}/knowledge/query:
+    post:
+      operationId: queryBakerKnowledge
+      tags: [knowledge]
+      summary: Query baker knowledge index (debug / preview)
+      parameters:
+        - name: bakerId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KnowledgeQueryInput"
+      responses:
+        "200":
+          description: Retrieved knowledge chunks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KnowledgeQueryResult"
+
   # ── CHAT CONVERSATIONS ─────────────────────────────────────────────────────────
   /chat/{bakerId}/conversations:
     get:
@@ -1296,3 +1341,39 @@ components:
         blockedTopics: { type: array, items: { type: string } }
         escalateKeywords: { type: array, items: { type: string } }
         autoReplyEnabled: { type: boolean }
+
+    KnowledgeReindexResult:
+      type: object
+      required: [bakerId, chunksIndexed, embeddingProvider, message]
+      properties:
+        bakerId: { type: integer }
+        chunksIndexed: { type: integer }
+        embeddingProvider: { type: string, enum: [openai, local] }
+        message: { type: string }
+
+    KnowledgeQueryInput:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string }
+
+    KnowledgeChunkHit:
+      type: object
+      required: [id, content, sourceType, score]
+      properties:
+        id: { type: integer }
+        content: { type: string }
+        sourceType: { type: string }
+        sourceId: { type: ["integer", "null"] }
+        score: { type: number }
+        metadata: { type: object, additionalProperties: true }
+
+    KnowledgeQueryResult:
+      type: object
+      required: [chunks, context]
+      properties:
+        context: { type: string }
+        chunks:
+          type: array
+          items:
+            $ref: "#/components/schemas/KnowledgeChunkHit"

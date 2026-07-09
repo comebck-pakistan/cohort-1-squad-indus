@@ -22,4 +22,8 @@ export interface BakerInput {
   maxOrdersPerDay?: number;
   slug: string;
   photoUrl?: string;
+  requireAdvance?: boolean;
+  advanceThresholdPkr?: number;
+  advancePercentage?: number;
+  paymentDetails?: string;
 }

@@ -34,5 +34,9 @@ export interface Baker {
   slug: string;
   /** @nullable */
   photoUrl?: string | null;
+  requireAdvance?: boolean;
+  advanceThresholdPkr?: number;
+  advancePercentage?: number;
+  paymentDetails?: string;
   createdAt: string;
 }

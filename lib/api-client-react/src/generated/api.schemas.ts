@@ -59,6 +59,10 @@ export interface Baker {
   slug: string;
   /** @nullable */
   photoUrl?: string | null;
+  requireAdvance?: boolean;
+  advanceThresholdPkr?: number;
+  advancePercentage?: number;
+  paymentDetails?: string;
   createdAt: string;
 }
 
@@ -78,6 +82,10 @@ export interface BakerInput {
   maxOrdersPerDay?: number;
   slug: string;
   photoUrl?: string;
+  requireAdvance?: boolean;
+  advanceThresholdPkr?: number;
+  advancePercentage?: number;
+  paymentDetails?: string;
 }
 
 export interface BakerUpdate {
@@ -94,6 +102,10 @@ export interface BakerUpdate {
   agentActive?: boolean;
   marketplaceVisible?: boolean;
   photoUrl?: string;
+  requireAdvance?: boolean;
+  advanceThresholdPkr?: number;
+  advancePercentage?: number;
+  paymentDetails?: string;
 }
 
 export interface BakerStats {

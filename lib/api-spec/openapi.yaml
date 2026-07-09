@@ -939,6 +939,10 @@ components:
         totalOrders: { type: integer }
         slug: { type: string }
         photoUrl: { type: ["string", "null"] }
+        requireAdvance: { type: boolean }
+        advanceThresholdPkr: { type: integer }
+        advancePercentage: { type: integer }
+        paymentDetails: { type: string }
         createdAt: { type: string }
 
     BakerInput:
@@ -960,6 +964,10 @@ components:
         maxOrdersPerDay: { type: integer }
         slug: { type: string }
         photoUrl: { type: string }
+        requireAdvance: { type: boolean }
+        advanceThresholdPkr: { type: integer }
+        advancePercentage: { type: integer }
+        paymentDetails: { type: string }
 
     BakerUpdate:
       type: object
@@ -977,6 +985,10 @@ components:
         agentActive: { type: boolean }
         marketplaceVisible: { type: boolean }
         photoUrl: { type: string }
+        requireAdvance: { type: boolean }
+        advanceThresholdPkr: { type: integer }
+        advancePercentage: { type: integer }
+        paymentDetails: { type: string }
 
     BakerStats:
       type: object

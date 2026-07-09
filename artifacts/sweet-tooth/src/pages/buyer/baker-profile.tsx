@@ -307,6 +307,7 @@ export default function BakerProfile() {
                   <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce delay-150"></div>
                 </div>
               </div>
+            )}
           </div>
           
           <div className="px-3 pt-2 bg-card border-t border-border flex gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1">

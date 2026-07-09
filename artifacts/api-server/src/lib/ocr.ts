@@ -78,7 +78,8 @@ export async function performReceiptOCR(imageUrl: string): Promise<string> {
  */
 export function verifyReceiptText(
   rawText: string,
-  expectedAmount: number,
+  expectedTotal: number,
+  advancePercentage: number,
   bakerWhatsapp: string,
   bakerBusinessName: string
 ): OCRVerificationResult {
@@ -131,8 +132,9 @@ export function verifyReceiptText(
     text.includes(bakerBusinessName.toLowerCase()) ||
     text.includes("sana");
 
-  // 4. Verify amount constraints (allow 50% deposit check)
-  const isAmountValid = extractedAmount >= expectedAmount * 0.45; // 10% grace tolerance for fees
+  // 4. Verify amount constraints (allow custom percentage deposit check)
+  const expectedDeposit = (expectedTotal * advancePercentage) / 100;
+  const isAmountValid = extractedAmount >= expectedDeposit * 0.9; // 10% grace tolerance for fees
 
   if (isAmountValid) confidence += 50;
   if (matchesAccount) confidence += 40;
@@ -144,7 +146,7 @@ export function verifyReceiptText(
   if (verified) {
     message = `Payment successfully auto-verified via OCR. Matched amount (PKR ${extractedAmount}) and recipient account.`;
   } else {
-    message = `Verification failed. Extracted amount: PKR ${extractedAmount} (Expected at least PKR ${expectedAmount * 0.5}). Recipient account match: ${matchesAccount ? "YES" : "NO"}.`;
+    message = `Verification failed. Extracted amount: PKR ${extractedAmount} (Expected at least PKR ${expectedDeposit}). Recipient account match: ${matchesAccount ? "YES" : "NO"}.`;
   }
 
   return {
@@ -178,6 +180,7 @@ export async function triggerPaymentOCRVerification(orderId: number): Promise<OC
   const result = verifyReceiptText(
     rawText,
     order.totalPkr,
+    baker.advancePercentage ?? 50,
     baker.whatsappNumber,
     baker.businessName
   );

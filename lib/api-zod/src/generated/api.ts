@@ -158,7 +158,11 @@ export const CreateBakerBody = zod.object({
   "returnPolicy": zod.string().optional(),
   "maxOrdersPerDay": zod.number().optional(),
   "slug": zod.string(),
-  "photoUrl": zod.string().optional()
+  "photoUrl": zod.string().optional(),
+  "requireAdvance": zod.boolean().optional(),
+  "advanceThresholdPkr": zod.number().optional(),
+  "advancePercentage": zod.number().optional(),
+  "paymentDetails": zod.string().optional()
 })
 
 export const CreateBakerResponse = zod.object({
@@ -182,6 +186,10 @@ export const CreateBakerResponse = zod.object({
   "totalOrders": zod.number().optional(),
   "slug": zod.string(),
   "photoUrl": zod.string().nullish(),
+  "requireAdvance": zod.boolean().optional(),
+  "advanceThresholdPkr": zod.number().optional(),
+  "advancePercentage": zod.number().optional(),
+  "paymentDetails": zod.string().optional(),
   "createdAt": zod.string()
 })
 
@@ -217,6 +225,10 @@ export const LoginBakerResponse = zod.object({
   "totalOrders": zod.number().optional(),
   "slug": zod.string(),
   "photoUrl": zod.string().nullish(),
+  "requireAdvance": zod.boolean().optional(),
+  "advanceThresholdPkr": zod.number().optional(),
+  "advancePercentage": zod.number().optional(),
+  "paymentDetails": zod.string().optional(),
   "createdAt": zod.string()
 })
 })
@@ -250,6 +262,10 @@ export const GetBakerResponse = zod.object({
   "totalOrders": zod.number().optional(),
   "slug": zod.string(),
   "photoUrl": zod.string().nullish(),
+  "requireAdvance": zod.boolean().optional(),
+  "advanceThresholdPkr": zod.number().optional(),
+  "advancePercentage": zod.number().optional(),
+  "paymentDetails": zod.string().optional(),
   "createdAt": zod.string()
 })
 
@@ -274,7 +290,11 @@ export const UpdateBakerBody = zod.object({
   "maxOrdersPerDay": zod.number().optional(),
   "agentActive": zod.boolean().optional(),
   "marketplaceVisible": zod.boolean().optional(),
-  "photoUrl": zod.string().optional()
+  "photoUrl": zod.string().optional(),
+  "requireAdvance": zod.boolean().optional(),
+  "advanceThresholdPkr": zod.number().optional(),
+  "advancePercentage": zod.number().optional(),
+  "paymentDetails": zod.string().optional()
 })
 
 export const UpdateBakerResponse = zod.object({
@@ -298,6 +318,10 @@ export const UpdateBakerResponse = zod.object({
   "totalOrders": zod.number().optional(),
   "slug": zod.string(),
   "photoUrl": zod.string().nullish(),
+  "requireAdvance": zod.boolean().optional(),
+  "advanceThresholdPkr": zod.number().optional(),
+  "advancePercentage": zod.number().optional(),
+  "paymentDetails": zod.string().optional(),
   "createdAt": zod.string()
 })
 

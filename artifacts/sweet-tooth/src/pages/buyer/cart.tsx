@@ -7,6 +7,7 @@ import {
   useCreateOrder,
   useClearCart,
   getGetCartQueryKey,
+  useGetBaker,
 } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,7 +46,15 @@ export default function Cart() {
 
   const total = cartItems?.reduce((sum, item) => sum + item.unitPricePkr * item.quantity, 0) || 0;
   const bakerIds = [...new Set(cartItems?.map((item) => item.bakerId) ?? [])];
-  const requireAdvance = total > 2000;
+  const bakerId = bakerIds[0];
+  const { data: baker } = useGetBaker(bakerId ?? 1, {
+    query: { enabled: !!bakerId }
+  });
+  const requireAdvance = baker?.requireAdvance
+    ? total >= (baker.advanceThresholdPkr ?? 2000)
+    : false;
+  const advancePercentage = baker?.advancePercentage ?? 50;
+  const advanceAmount = Math.round((total * advancePercentage) / 100);
 
   const handleCheckout = () => {
     setCheckoutError(null);
@@ -59,7 +68,7 @@ export default function Cart() {
       return;
     }
     if (requireAdvance && !paymentScreenshotUrl.trim()) {
-      setCheckoutError("An advance payment proof is required for orders above PKR 2,000. Please enter the Transaction ID or payment receipt URL.");
+      setCheckoutError(`An advance payment proof is required for this order. Please transfer PKR ${advanceAmount.toLocaleString()} (${advancePercentage}%) and enter the Transaction ID or payment receipt URL.`);
       return;
     }
 
@@ -243,11 +252,10 @@ export default function Cart() {
                   ⚠️ Advance Payment Required
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  To prevent ghost orders, this baker requires a 50% advance deposit (<strong>PKR {(total * 0.5).toLocaleString()}</strong>) for orders exceeding PKR 2,000.
+                  To prevent ghost orders, this baker requires a {advancePercentage}% advance deposit (<strong>PKR {advanceAmount.toLocaleString()}</strong>) for orders exceeding PKR {(baker?.advanceThresholdPkr ?? 2000).toLocaleString()}.
                 </p>
-                <div className="text-xs p-2 bg-card rounded border border-border space-y-1 font-mono text-foreground">
-                  <div><strong>Easypaisa:</strong> 0300-1234567 (Sana M.)</div>
-                  <div><strong>Bank Alfalah:</strong> 0123-4567-8910 (Sana's Studio)</div>
+                <div className="text-xs p-2 bg-card rounded border border-border space-y-1 font-mono text-foreground whitespace-pre-wrap">
+                  {baker?.paymentDetails || "Easypaisa Account: 0300-1234567 (Sana Asghar)"}
                 </div>
                 <input
                   value={paymentScreenshotUrl}

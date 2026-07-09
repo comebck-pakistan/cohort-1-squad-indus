@@ -20,4 +20,8 @@ export interface BakerUpdate {
   agentActive?: boolean;
   marketplaceVisible?: boolean;
   photoUrl?: string;
+  requireAdvance?: boolean;
+  advanceThresholdPkr?: number;
+  advancePercentage?: number;
+  paymentDetails?: string;
 }

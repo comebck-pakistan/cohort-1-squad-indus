@@ -11,6 +11,7 @@ import {
 } from "@workspace/db/schema";
 import { sql } from "drizzle-orm";
 import { reindexBakerKnowledge } from "./lib/rag/indexer";
+import { hashPassword } from "./lib/auth";
 
 async function seed() {
   console.log("Seeding Sweet Tooth database...");
@@ -27,6 +28,8 @@ async function seed() {
     city: "Lahore",
     area: "Gulberg",
     whatsappNumber: "+923001234567",
+    email: "sana@studio.com",
+    passwordHash: hashPassword("sana123"),
     deliveryAreas: ["Gulberg", "Model Town", "DHA Phase 1", "DHA Phase 2", "Johar Town"],
     codPolicy: "Cash on delivery only. 50% advance for custom orders above PKR 5,000. Full payment on delivery for standard orders.",
     returnPolicy: "Quality issue? Contact me within 2 hours of delivery. I'll make it right.",
@@ -49,6 +52,8 @@ async function seed() {
     city: "Karachi",
     area: "Clifton",
     whatsappNumber: "+923219876543",
+    email: "fatima@cakery.com",
+    passwordHash: hashPassword("fatima123"),
     deliveryAreas: ["Clifton", "Defence", "Bahadurabad", "Gulshan-e-Iqbal"],
     codPolicy: "COD available. Custom cakes require 30% advance payment.",
     returnPolicy: "Freshness guaranteed. Report issues within 1 hour of delivery.",
@@ -70,6 +75,8 @@ async function seed() {
     city: "Islamabad",
     area: "F-7",
     whatsappNumber: "+923115554321",
+    email: "amna@bakes.com",
+    passwordHash: hashPassword("amna123"),
     deliveryAreas: ["F-7", "F-8", "G-9", "G-11", "Blue Area"],
     codPolicy: "Cash on delivery for all orders.",
     returnPolicy: "Quality guarantee on all products.",

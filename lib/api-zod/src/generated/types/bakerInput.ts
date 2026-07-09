@@ -14,6 +14,8 @@ export interface BakerInput {
   city: string;
   area?: string;
   whatsappNumber: string;
+  email: string;
+  password: string;
   deliveryAreas?: string[];
   codPolicy?: string;
   returnPolicy?: string;

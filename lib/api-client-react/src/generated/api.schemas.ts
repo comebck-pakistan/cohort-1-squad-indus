@@ -43,6 +43,8 @@ export interface Baker {
   /** @nullable */
   area?: string | null;
   whatsappNumber?: string;
+  /** @nullable */
+  email?: string | null;
   deliveryAreas?: string[];
   /** @nullable */
   codPolicy?: string | null;
@@ -68,6 +70,8 @@ export interface BakerInput {
   city: string;
   area?: string;
   whatsappNumber: string;
+  email: string;
+  password: string;
   deliveryAreas?: string[];
   codPolicy?: string;
   returnPolicy?: string;
@@ -202,6 +206,14 @@ export interface Order {
   occasion?: string | null;
   /** @nullable */
   specialInstructions?: string | null;
+  /** @nullable */
+  flavour?: string | null;
+  /** @nullable */
+  textOnCake?: string | null;
+  /** @nullable */
+  paymentScreenshotUrl?: string | null;
+  advancePaid?: boolean;
+  requireAdvance?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -219,6 +231,11 @@ export interface OrderInput {
   source?: string;
   occasion?: string;
   specialInstructions?: string;
+  flavour?: string;
+  textOnCake?: string;
+  paymentScreenshotUrl?: string;
+  advancePaid?: boolean;
+  requireAdvance?: boolean;
 }
 
 export interface OrderStatusUpdate {
@@ -496,6 +513,16 @@ dietary?: string;
 export type ListBakersParams = {
 city?: string;
 area?: string;
+};
+
+export type LoginBakerBody = {
+  email: string;
+  password: string;
+};
+
+export type LoginBaker200 = {
+  token: string;
+  baker: Baker;
 };
 
 export type ListProductsParams = {

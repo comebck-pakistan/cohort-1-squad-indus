@@ -152,6 +152,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/Baker"
 
+  /bakers/login:
+    post:
+      operationId: loginBaker
+      tags: [bakers]
+      summary: Login baker with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, baker]
+                properties:
+                  token: { type: string }
+                  baker: { $ref: "#/components/schemas/Baker" }
+        "401":
+          description: Invalid credentials
+
   /bakers/{bakerId}:
     get:
       operationId: getBaker
@@ -898,6 +927,7 @@ components:
         city: { type: string }
         area: { type: ["string", "null"] }
         whatsappNumber: { type: string }
+        email: { type: ["string", "null"] }
         deliveryAreas: { type: array, items: { type: string } }
         codPolicy: { type: ["string", "null"] }
         returnPolicy: { type: ["string", "null"] }
@@ -913,7 +943,7 @@ components:
 
     BakerInput:
       type: object
-      required: [businessName, ownerName, city, whatsappNumber, slug]
+      required: [businessName, ownerName, city, whatsappNumber, slug, email, password]
       properties:
         businessName: { type: string }
         ownerName: { type: string }
@@ -922,6 +952,8 @@ components:
         city: { type: string }
         area: { type: string }
         whatsappNumber: { type: string }
+        email: { type: string }
+        password: { type: string }
         deliveryAreas: { type: array, items: { type: string } }
         codPolicy: { type: string }
         returnPolicy: { type: string }
@@ -1062,6 +1094,11 @@ components:
         source: { type: string }
         occasion: { type: ["string", "null"] }
         specialInstructions: { type: ["string", "null"] }
+        flavour: { type: ["string", "null"] }
+        textOnCake: { type: ["string", "null"] }
+        paymentScreenshotUrl: { type: ["string", "null"] }
+        advancePaid: { type: boolean }
+        requireAdvance: { type: boolean }
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -1081,6 +1118,11 @@ components:
         source: { type: string }
         occasion: { type: string }
         specialInstructions: { type: string }
+        flavour: { type: string }
+        textOnCake: { type: string }
+        paymentScreenshotUrl: { type: string }
+        advancePaid: { type: boolean }
+        requireAdvance: { type: boolean }
 
     OrderStatusUpdate:
       type: object

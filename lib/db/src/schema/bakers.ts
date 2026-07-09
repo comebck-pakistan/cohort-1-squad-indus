@@ -12,6 +12,8 @@ export const bakersTable = sweetTooth.table("bakers", {
   city: text("city").notNull(),
   area: text("area"),
   whatsappNumber: text("whatsapp_number").notNull().unique(),
+  email: text("email").unique(),
+  passwordHash: text("password_hash"),
   deliveryAreas: text("delivery_areas").array().notNull().default([]),
   codPolicy: text("cod_policy"),
   returnPolicy: text("return_policy"),
@@ -38,6 +40,6 @@ export const bakersTable = sweetTooth.table("bakers", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export const insertBakerSchema = createInsertSchema(bakersTable).omit({ id: true, createdAt: true, updatedAt: true, ratingAvg: true, totalOrders: true });
+export const insertBakerSchema = createInsertSchema(bakersTable).omit({ id: true, createdAt: true, updatedAt: true, ratingAvg: true, totalOrders: true, passwordHash: true });
 export type InsertBaker = z.infer<typeof insertBakerSchema>;
 export type Baker = typeof bakersTable.$inferSelect;

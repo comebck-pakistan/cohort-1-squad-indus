@@ -10,6 +10,9 @@ import {
   UpdateBakerBody,
   CreateBakerBody,
 } from "@workspace/api-zod";
+import { z } from "zod";
+import { hashPassword, verifyPassword, signToken } from "../lib/auth";
+import { requireBakerAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -31,15 +34,76 @@ router.get("/bakers", async (req, res): Promise<void> => {
   res.json(bakerCards);
 });
 
-// POST /bakers
+// POST /bakers (Register / Signup)
 router.post("/bakers", async (req, res): Promise<void> => {
-  const parsed = CreateBakerBody.safeParse(req.body);
+  // We expect email and password in request body
+  const schema = z.object({
+    businessName: z.string(),
+    ownerName: z.string(),
+    city: z.string(),
+    whatsappNumber: z.string(),
+    slug: z.string(),
+    email: z.string().email(),
+    password: z.string().min(6),
+    tagline: z.string().optional(),
+    bio: z.string().optional(),
+  });
+  
+  const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [baker] = await db.insert(bakersTable).values(parsed.data).returning();
-  res.status(201).json({ ...baker, deliveryAreas: baker.deliveryAreas ?? [] });
+
+  const { password, ...rest } = parsed.data;
+  const passwordHash = hashPassword(password);
+
+  try {
+    const [baker] = await db.insert(bakersTable).values({
+      ...rest,
+      passwordHash,
+    }).returning();
+    
+    const token = signToken({ bakerId: baker.id, email: baker.email });
+    res.status(201).json({ token, baker: { ...baker, deliveryAreas: baker.deliveryAreas ?? [] } });
+  } catch (error: any) {
+    if (error.code === "23505") {
+      res.status(400).json({ error: "Email or WhatsApp number already registered" });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+// POST /bakers/login
+router.post("/bakers/login", async (req, res): Promise<void> => {
+  const schema = z.object({
+    email: z.string().email(),
+    password: z.string(),
+  });
+  
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { email, password } = parsed.data;
+  const [baker] = await db.select().from(bakersTable).where(eq(bakersTable.email, email));
+  
+  if (!baker || !baker.passwordHash) {
+    res.status(401).json({ error: "Invalid email or password" });
+    return;
+  }
+
+  const isMatch = verifyPassword(password, baker.passwordHash);
+  if (!isMatch) {
+    res.status(401).json({ error: "Invalid email or password" });
+    return;
+  }
+
+  const token = signToken({ bakerId: baker.id, email: baker.email });
+  res.json({ token, baker: { ...baker, deliveryAreas: baker.deliveryAreas ?? [] } });
 });
 
 // GET /bakers/:bakerId
@@ -57,18 +121,26 @@ router.get("/bakers/:bakerId", async (req, res): Promise<void> => {
   res.json({ ...baker, deliveryAreas: baker.deliveryAreas ?? [] });
 });
 
-// PATCH /bakers/:bakerId
-router.patch("/bakers/:bakerId", async (req, res): Promise<void> => {
+// PATCH /bakers/:bakerId (Secured)
+router.patch("/bakers/:bakerId", requireBakerAuth, async (req, res): Promise<void> => {
   const params = UpdateBakerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  
+  const tokenBakerId = (req as any).bakerId;
+  if (tokenBakerId !== params.data.bakerId) {
+    res.status(403).json({ error: "Unauthorized access to this baker profile." });
+    return;
+  }
+
   const parsed = UpdateBakerBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  
   const [baker] = await db.update(bakersTable).set(parsed.data).where(eq(bakersTable.id, params.data.bakerId)).returning();
   if (!baker) {
     res.status(404).json({ error: "Baker not found" });

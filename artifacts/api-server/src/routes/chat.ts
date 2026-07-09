@@ -3,11 +3,12 @@ import { eq, and, desc } from "drizzle-orm";
 import { db, chatMessagesTable, conversationMemoryTable } from "@workspace/db";
 import { SendChatMessageBody, GetChatHistoryParams } from "@workspace/api-zod";
 import { processChatMessage } from "../lib/chat-agent";
+import { rateLimit } from "../middlewares/rate-limiter";
 
 const router: IRouter = Router();
 
 // POST /chat
-router.post("/chat", async (req, res): Promise<void> => {
+router.post("/chat", rateLimit(60, 60 * 1000), async (req, res): Promise<void> => {
   const parsed = SendChatMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

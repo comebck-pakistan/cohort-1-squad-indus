@@ -8,6 +8,7 @@ import {
   phonesMatch,
   sendWhatsAppTextMessage,
 } from "../lib/whatsapp";
+import { rateLimit } from "../middlewares/rate-limiter";
 
 const router: IRouter = Router();
 
@@ -63,7 +64,7 @@ async function findBakerForInbound(
 }
 
 // Meta inbound messages — POST /webhooks/whatsapp
-router.post("/webhooks/whatsapp", async (req, res): Promise<void> => {
+router.post("/webhooks/whatsapp", rateLimit(100, 60 * 1000), async (req, res): Promise<void> => {
   res.sendStatus(200);
 
   try {

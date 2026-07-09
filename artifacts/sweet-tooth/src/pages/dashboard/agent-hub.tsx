@@ -7,6 +7,8 @@ import {
   useGetChatHistory,
   useReindexBakerKnowledge,
   getGetAgentConfigQueryKey,
+  getListConversationsQueryKey,
+  getGetChatHistoryQueryKey,
 } from "@workspace/api-client-react";
 import type { KnowledgeReindexResult } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
@@ -52,11 +54,19 @@ export default function AgentHub() {
   });
 
   const { data: conversations } = useListConversations(bakerId, {
-    query: { enabled: !!bakerId && activeTab === "conversations" },
+    query: {
+      enabled: !!bakerId && activeTab === "conversations",
+      queryKey: getListConversationsQueryKey(bakerId),
+      refetchInterval: 5000,
+    },
   });
 
   const { data: chatHistory } = useGetChatHistory(bakerId, selectedBuyerId ?? 0, {
-    query: { enabled: !!bakerId && selectedBuyerId !== null },
+    query: {
+      enabled: !!bakerId && selectedBuyerId !== null,
+      queryKey: getGetChatHistoryQueryKey(bakerId, selectedBuyerId ?? 0),
+      refetchInterval: 5000,
+    },
   });
 
   const updateConfig = useUpdateAgentConfig();

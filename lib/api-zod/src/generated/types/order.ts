@@ -30,6 +30,14 @@ export interface Order {
   occasion?: string | null;
   /** @nullable */
   specialInstructions?: string | null;
+  /** @nullable */
+  flavour?: string | null;
+  /** @nullable */
+  textOnCake?: string | null;
+  /** @nullable */
+  paymentScreenshotUrl?: string | null;
+  advancePaid?: boolean;
+  requireAdvance?: boolean;
   createdAt: string;
   updatedAt?: string;
 }

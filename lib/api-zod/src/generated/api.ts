@@ -151,6 +151,8 @@ export const CreateBakerBody = zod.object({
   "city": zod.string(),
   "area": zod.string().optional(),
   "whatsappNumber": zod.string(),
+  "email": zod.string(),
+  "password": zod.string(),
   "deliveryAreas": zod.array(zod.string()).optional(),
   "codPolicy": zod.string().optional(),
   "returnPolicy": zod.string().optional(),
@@ -168,6 +170,7 @@ export const CreateBakerResponse = zod.object({
   "city": zod.string(),
   "area": zod.string().nullish(),
   "whatsappNumber": zod.string().optional(),
+  "email": zod.string().nullish(),
   "deliveryAreas": zod.array(zod.string()).optional(),
   "codPolicy": zod.string().nullish(),
   "returnPolicy": zod.string().nullish(),
@@ -180,6 +183,42 @@ export const CreateBakerResponse = zod.object({
   "slug": zod.string(),
   "photoUrl": zod.string().nullish(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Login baker with email and password
+ */
+export const LoginBakerBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginBakerResponse = zod.object({
+  "token": zod.string(),
+  "baker": zod.object({
+  "id": zod.number(),
+  "businessName": zod.string(),
+  "ownerName": zod.string().optional(),
+  "tagline": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "city": zod.string(),
+  "area": zod.string().nullish(),
+  "whatsappNumber": zod.string().optional(),
+  "email": zod.string().nullish(),
+  "deliveryAreas": zod.array(zod.string()).optional(),
+  "codPolicy": zod.string().nullish(),
+  "returnPolicy": zod.string().nullish(),
+  "maxOrdersPerDay": zod.number().optional(),
+  "agentActive": zod.boolean().optional(),
+  "marketplaceVisible": zod.boolean().optional(),
+  "subscriptionPlan": zod.string().optional(),
+  "ratingAvg": zod.number().optional(),
+  "totalOrders": zod.number().optional(),
+  "slug": zod.string(),
+  "photoUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
 })
 
 
@@ -199,6 +238,7 @@ export const GetBakerResponse = zod.object({
   "city": zod.string(),
   "area": zod.string().nullish(),
   "whatsappNumber": zod.string().optional(),
+  "email": zod.string().nullish(),
   "deliveryAreas": zod.array(zod.string()).optional(),
   "codPolicy": zod.string().nullish(),
   "returnPolicy": zod.string().nullish(),
@@ -246,6 +286,7 @@ export const UpdateBakerResponse = zod.object({
   "city": zod.string(),
   "area": zod.string().nullish(),
   "whatsappNumber": zod.string().optional(),
+  "email": zod.string().nullish(),
   "deliveryAreas": zod.array(zod.string()).optional(),
   "codPolicy": zod.string().nullish(),
   "returnPolicy": zod.string().nullish(),
@@ -585,6 +626,11 @@ export const ListOrdersResponseItem = zod.object({
   "source": zod.string(),
   "occasion": zod.string().nullish(),
   "specialInstructions": zod.string().nullish(),
+  "flavour": zod.string().nullish(),
+  "textOnCake": zod.string().nullish(),
+  "paymentScreenshotUrl": zod.string().nullish(),
+  "advancePaid": zod.boolean().optional(),
+  "requireAdvance": zod.boolean().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -613,7 +659,12 @@ export const CreateOrderBody = zod.object({
   "deliveryDate": zod.string().optional(),
   "source": zod.string().optional(),
   "occasion": zod.string().optional(),
-  "specialInstructions": zod.string().optional()
+  "specialInstructions": zod.string().optional(),
+  "flavour": zod.string().optional(),
+  "textOnCake": zod.string().optional(),
+  "paymentScreenshotUrl": zod.string().optional(),
+  "advancePaid": zod.boolean().optional(),
+  "requireAdvance": zod.boolean().optional()
 })
 
 export const CreateOrderResponse = zod.object({
@@ -640,6 +691,11 @@ export const CreateOrderResponse = zod.object({
   "source": zod.string(),
   "occasion": zod.string().nullish(),
   "specialInstructions": zod.string().nullish(),
+  "flavour": zod.string().nullish(),
+  "textOnCake": zod.string().nullish(),
+  "paymentScreenshotUrl": zod.string().nullish(),
+  "advancePaid": zod.boolean().optional(),
+  "requireAdvance": zod.boolean().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -676,6 +732,11 @@ export const GetOrderResponse = zod.object({
   "source": zod.string(),
   "occasion": zod.string().nullish(),
   "specialInstructions": zod.string().nullish(),
+  "flavour": zod.string().nullish(),
+  "textOnCake": zod.string().nullish(),
+  "paymentScreenshotUrl": zod.string().nullish(),
+  "advancePaid": zod.boolean().optional(),
+  "requireAdvance": zod.boolean().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -716,6 +777,11 @@ export const UpdateOrderStatusResponse = zod.object({
   "source": zod.string(),
   "occasion": zod.string().nullish(),
   "specialInstructions": zod.string().nullish(),
+  "flavour": zod.string().nullish(),
+  "textOnCake": zod.string().nullish(),
+  "paymentScreenshotUrl": zod.string().nullish(),
+  "advancePaid": zod.boolean().optional(),
+  "requireAdvance": zod.boolean().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -756,6 +822,11 @@ export const MarkOrderPaidResponse = zod.object({
   "source": zod.string(),
   "occasion": zod.string().nullish(),
   "specialInstructions": zod.string().nullish(),
+  "flavour": zod.string().nullish(),
+  "textOnCake": zod.string().nullish(),
+  "paymentScreenshotUrl": zod.string().nullish(),
+  "advancePaid": zod.boolean().optional(),
+  "requireAdvance": zod.boolean().optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })

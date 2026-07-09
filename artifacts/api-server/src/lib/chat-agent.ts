@@ -6,6 +6,7 @@ import {
   productsTable,
   conversationMemoryTable,
   notificationsTable,
+  customersTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 import { formatRetrievedContext, retrieveKnowledge } from "./rag/retriever";
@@ -336,7 +337,36 @@ export type ProcessChatResult = AgentReply & { sessionId: string };
 
 export async function processChatMessage(input: ProcessChatInput): Promise<ProcessChatResult> {
   const { bakerId, message } = input;
-  const buyerId = input.buyerId ?? null;
+  let buyerId = input.buyerId ?? null;
+
+  // Resolve buyerId for WhatsApp or other channels using phone number
+  if (!buyerId && input.buyerWhatsapp) {
+    const whatsappClean = input.buyerWhatsapp.trim();
+    const [existingCustomer] = await db
+      .select()
+      .from(customersTable)
+      .where(
+        and(
+          eq(customersTable.bakerId, bakerId),
+          eq(customersTable.whatsappNumber, whatsappClean)
+        )
+      );
+
+    if (existingCustomer) {
+      buyerId = existingCustomer.id;
+    } else {
+      const [newCustomer] = await db
+        .insert(customersTable)
+        .values({
+          name: `WhatsApp Guest (${whatsappClean.slice(-4)})`,
+          whatsappNumber: whatsappClean,
+          bakerId,
+        })
+        .returning();
+      buyerId = newCustomer.id;
+    }
+  }
+
   const sid =
     input.sessionId ??
     (input.channel === "whatsapp" && input.buyerWhatsapp

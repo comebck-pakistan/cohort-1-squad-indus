@@ -39,6 +39,8 @@ export * from './listBakersParams';
 export * from './listCustomersParams';
 export * from './listOrdersParams';
 export * from './listProductsParams';
+export * from './loginBaker200';
+export * from './loginBakerBody';
 export * from './order';
 export * from './orderInput';
 export * from './orderItem';

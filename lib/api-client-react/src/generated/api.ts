@@ -48,6 +48,8 @@ import type {
   ListCustomersParams,
   ListOrdersParams,
   ListProductsParams,
+  LoginBaker200,
+  LoginBakerBody,
   Order,
   OrderInput,
   OrderSourceStat,
@@ -565,6 +567,77 @@ export const useCreateBaker = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBakerMutationOptions(options));
+    }
+
+export const getLoginBakerUrl = () => {
+
+
+
+
+  return `/api/bakers/login`
+}
+
+/**
+ * @summary Login baker with email and password
+ */
+export const loginBaker = async (loginBakerBody: LoginBakerBody, options?: RequestInit): Promise<LoginBaker200> => {
+
+  return customFetch<LoginBaker200>(getLoginBakerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginBakerBody)
+  }
+);}
+
+
+
+
+
+export const getLoginBakerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginBaker>>, TError,{data: BodyType<LoginBakerBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof loginBaker>>, TError,{data: BodyType<LoginBakerBody>}, TContext> => {
+
+const mutationKey = ['loginBaker'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof loginBaker>>, {data: BodyType<LoginBakerBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  loginBaker(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginBakerMutationResult = NonNullable<Awaited<ReturnType<typeof loginBaker>>>
+    export type LoginBakerMutationBody = BodyType<LoginBakerBody>
+    export type LoginBakerMutationError = ErrorType<void>
+
+    /**
+ * @summary Login baker with email and password
+ */
+export const useLoginBaker = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginBaker>>, TError,{data: BodyType<LoginBakerBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof loginBaker>>,
+        TError,
+        {data: BodyType<LoginBakerBody>},
+        TContext
+      > => {
+      return useMutation(getLoginBakerMutationOptions(options));
     }
 
 export const getGetBakerUrl = (bakerId: number,) => {

@@ -59,10 +59,10 @@ export default function Home() {
             Pakistan's Home Baker Marketplace
           </p>
           <h1 className="text-5xl md:text-6xl font-bold font-serif mb-4" style={{ color: "hsl(var(--primary-foreground))" }}>
-            Ghar ka meetha
+            Meethi Khushiyan, Ghar Se Aap Tak
           </h1>
           <p className="text-lg mb-10" style={{ color: "rgba(255,255,255,0.8)" }}>
-            Handmade baked goods from your neighbour's kitchen. Order with love, pay on delivery.
+            Fresh, custom homemade bakes from local kitchens in Pakistan. Crafted with love, delivered with care.
           </p>
 
           {/* Search bar */}

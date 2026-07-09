@@ -7,7 +7,7 @@ import { format } from "date-fns";
 export default function DashboardOrders() {
   const { bakerId } = useBuyerSession();
   const queryClient = useQueryClient();
-  const { data: orders, isLoading } = useListOrders({ bakerId }, { query: { enabled: !!bakerId, queryKey: getListOrdersQueryKey({ bakerId }) } });
+  const { data: orders, isLoading } = useListOrders({ bakerId }, { query: { enabled: !!bakerId, queryKey: getListOrdersQueryKey({ bakerId }), refetchInterval: 10000 } });
   const updateStatus = useUpdateOrderStatus();
 
   const handleStatusUpdate = (orderId: number, status: string) => {

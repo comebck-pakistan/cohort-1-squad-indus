@@ -22,6 +22,9 @@ export default function Cart() {
   const [buyerAddress, setBuyerAddress] = useState("");
   const [buyerArea, setBuyerArea] = useState("");
   const [specialInstructions, setSpecialInstructions] = useState("");
+  const [flavour, setFlavour] = useState("");
+  const [textOnCake, setTextOnCake] = useState("");
+  const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState("");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const { data: cartItems, isLoading } = useGetCart(
@@ -42,6 +45,7 @@ export default function Cart() {
 
   const total = cartItems?.reduce((sum, item) => sum + item.unitPricePkr * item.quantity, 0) || 0;
   const bakerIds = [...new Set(cartItems?.map((item) => item.bakerId) ?? [])];
+  const requireAdvance = total > 2000;
 
   const handleCheckout = () => {
     setCheckoutError(null);
@@ -52,6 +56,10 @@ export default function Cart() {
     }
     if (!buyerName.trim() || !buyerWhatsapp.trim() || !buyerAddress.trim()) {
       setCheckoutError("Name, WhatsApp number, and address are required.");
+      return;
+    }
+    if (requireAdvance && !paymentScreenshotUrl.trim()) {
+      setCheckoutError("An advance payment proof is required for orders above PKR 2,000. Please enter the Transaction ID or payment receipt URL.");
       return;
     }
 
@@ -67,6 +75,11 @@ export default function Cart() {
         totalPkr: total,
         source: "marketplace",
         specialInstructions: specialInstructions.trim() || undefined,
+        flavour: flavour.trim() || undefined,
+        textOnCake: textOnCake.trim() || undefined,
+        paymentScreenshotUrl: paymentScreenshotUrl.trim() || undefined,
+        requireAdvance,
+        advancePaid: requireAdvance ? !!paymentScreenshotUrl.trim() : false,
         items: cartItems.map((item) => ({
           productId: item.productId,
           productName: item.productName,
@@ -163,53 +176,95 @@ export default function Cart() {
       </div>
 
       {checkoutOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl font-bold">Checkout (COD)</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="bg-card border border-border rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="font-serif text-xl font-bold text-primary">Checkout & Customization</h2>
               <button onClick={() => setCheckoutOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <input
-              value={buyerName}
-              onChange={(e) => setBuyerName(e.target.value)}
-              placeholder="Your name"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
-            <input
-              value={buyerWhatsapp}
-              onChange={(e) => setBuyerWhatsapp(e.target.value)}
-              placeholder="WhatsApp (+92...)"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
-            <input
-              value={buyerArea}
-              onChange={(e) => setBuyerArea(e.target.value)}
-              placeholder="Area (e.g. F-7, Gulberg)"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
-            <textarea
-              value={buyerAddress}
-              onChange={(e) => setBuyerAddress(e.target.value)}
-              placeholder="Full delivery address"
-              rows={2}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm resize-none"
-            />
-            <textarea
-              value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
-              placeholder="Special instructions (optional)"
-              rows={2}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm resize-none"
-            />
-            {checkoutError && <p className="text-sm text-destructive">{checkoutError}</p>}
+            
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contact & Delivery Info</h3>
+              <input
+                value={buyerName}
+                onChange={(e) => setBuyerName(e.target.value)}
+                placeholder="Your Full Name"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+              <input
+                value={buyerWhatsapp}
+                onChange={(e) => setBuyerWhatsapp(e.target.value)}
+                placeholder="WhatsApp Number (e.g. +923001234567)"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+              <input
+                value={buyerArea}
+                onChange={(e) => setBuyerArea(e.target.value)}
+                placeholder="Area (e.g. Gulberg, DHA Phase 5, F-7)"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+              <textarea
+                value={buyerAddress}
+                onChange={(e) => setBuyerAddress(e.target.value)}
+                placeholder="Complete House Address"
+                rows={2}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 resize-none focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-3 border-t border-border pt-4">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cake Customization (Optional)</h3>
+              <input
+                value={flavour}
+                onChange={(e) => setFlavour(e.target.value)}
+                placeholder="Preferred Flavour (e.g. Chocolate Fudge, Red Velvet)"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+              <input
+                value={textOnCake}
+                onChange={(e) => setTextOnCake(e.target.value)}
+                placeholder="Text on Cake (e.g. 'Happy 5th Birthday Ayan!')"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+              <textarea
+                value={specialInstructions}
+                onChange={(e) => setSpecialInstructions(e.target.value)}
+                placeholder="Any special design requests or allergy warnings..."
+                rows={2}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 resize-none focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+            </div>
+
+            {requireAdvance && (
+              <div className="space-y-3 border-t border-border pt-4 bg-yellow-50/50 dark:bg-yellow-950/20 p-3 rounded-lg border border-yellow-200/50">
+                <h3 className="text-xs font-semibold text-yellow-800 dark:text-yellow-400 uppercase tracking-wider flex items-center gap-1">
+                  ⚠️ Advance Payment Required
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  To prevent ghost orders, this baker requires a 50% advance deposit (<strong>PKR {(total * 0.5).toLocaleString()}</strong>) for orders exceeding PKR 2,000.
+                </p>
+                <div className="text-xs p-2 bg-card rounded border border-border space-y-1 font-mono text-foreground">
+                  <div><strong>Easypaisa:</strong> 0300-1234567 (Sana M.)</div>
+                  <div><strong>Bank Alfalah:</strong> 0123-4567-8910 (Sana's Studio)</div>
+                </div>
+                <input
+                  value={paymentScreenshotUrl}
+                  onChange={(e) => setPaymentScreenshotUrl(e.target.value)}
+                  placeholder="Enter Transaction ID or Receipt Image Link"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-card focus:ring-1 focus:ring-primary focus:outline-none font-mono"
+                />
+              </div>
+            )}
+
+            {checkoutError && <p className="text-sm text-destructive font-medium">{checkoutError}</p>}
             <button
               onClick={handleCheckout}
               disabled={createOrder.isPending || clearCart.isPending}
-              className="w-full bg-primary text-primary-foreground py-3 rounded-md font-bold hover:bg-primary/90 disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:bg-primary/90 disabled:opacity-50 transition-all cursor-pointer"
             >
-              {createOrder.isPending ? "Placing order..." : `Place order — PKR ${total.toLocaleString()}`}
+              {createOrder.isPending ? "Placing order..." : `Place Order — PKR ${total.toLocaleString()}`}
             </button>
           </div>
         </div>

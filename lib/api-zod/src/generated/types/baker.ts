@@ -18,6 +18,8 @@ export interface Baker {
   /** @nullable */
   area?: string | null;
   whatsappNumber?: string;
+  /** @nullable */
+  email?: string | null;
   deliveryAreas?: string[];
   /** @nullable */
   codPolicy?: string | null;

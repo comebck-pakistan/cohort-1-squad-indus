@@ -61,7 +61,7 @@ export default function BakerProfile() {
   // Chat Widget State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const { data: chatHistory } = useGetChatHistory(bakerId, buyerId, { query: { enabled: isChatOpen, queryKey: getGetChatHistoryQueryKey(bakerId, buyerId) } });
+  const { data: chatHistory } = useGetChatHistory(bakerId, buyerId, { query: { enabled: isChatOpen, queryKey: getGetChatHistoryQueryKey(bakerId, buyerId), refetchInterval: 5000 } });
   const sendMessage = useSendChatMessage();
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -126,7 +126,7 @@ export default function BakerProfile() {
                       {baker.ratingAvg?.toFixed(1) || 'New'} 
                       <span className="text-sm text-muted-foreground ml-1">({baker.totalOrders} orders)</span>
                     </div>
-                    {baker.isActive && (
+                    {baker.agentActive && (
                       <span className="flex items-center gap-1.5 text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm font-medium border border-green-200">
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                         Active today

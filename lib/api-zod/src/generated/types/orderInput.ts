@@ -20,4 +20,9 @@ export interface OrderInput {
   source?: string;
   occasion?: string;
   specialInstructions?: string;
+  flavour?: string;
+  textOnCake?: string;
+  paymentScreenshotUrl?: string;
+  advancePaid?: boolean;
+  requireAdvance?: boolean;
 }

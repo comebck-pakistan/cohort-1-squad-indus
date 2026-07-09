@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useBuyerSession } from "@/hooks/use-session";
-import { useGetBaker, useUpdateBaker, getGetBakerQueryKey } from "@/lib/api-client-react/src/generated/api";
+import { useGetBaker, useUpdateBaker, getGetBakerQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 
@@ -38,7 +38,6 @@ export default function DashboardSettings() {
       data: {
         businessName,
         tagline,
-        whatsappNumber,
         codPolicy,
         requireAdvance,
         advanceThresholdPkr,

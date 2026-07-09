@@ -48,7 +48,10 @@ export default function Cart() {
   const bakerIds = [...new Set(cartItems?.map((item) => item.bakerId) ?? [])];
   const bakerId = bakerIds[0];
   const { data: baker } = useGetBaker(bakerId ?? 1, {
-    query: { enabled: !!bakerId }
+    query: { 
+      enabled: !!bakerId,
+      queryKey: ['getBaker', bakerId ?? 1]
+    }
   });
   const requireAdvance = baker?.requireAdvance
     ? total >= (baker.advanceThresholdPkr ?? 2000)

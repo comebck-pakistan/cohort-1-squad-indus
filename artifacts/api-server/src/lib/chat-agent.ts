@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import {
   db,
   chatMessagesTable,
@@ -7,6 +7,7 @@ import {
   conversationMemoryTable,
   notificationsTable,
   customersTable,
+  ordersTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 import { formatRetrievedContext, retrieveKnowledge } from "./rag/retriever";
@@ -104,6 +105,51 @@ export async function generateAgentReply(
 
   const products = await db.select().from(productsTable).where(eq(productsTable.bakerId, bakerId));
   const lowerMsg = message.toLowerCase();
+
+  // Rule-based handler for Order Status and Advance Payment verification queries
+  if (buyerId && (lowerMsg.includes("status") || lowerMsg.includes("verify") || lowerMsg.includes("receipt") || lowerMsg.includes("screenshot") || lowerMsg.includes("payment") || lowerMsg.includes("advance"))) {
+    const [latestOrder] = await db
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.buyerId, buyerId))
+      .orderBy(desc(ordersTable.createdAt))
+      .limit(1);
+
+    if (latestOrder) {
+      if (latestOrder.requireAdvance) {
+        if (latestOrder.advancePaid) {
+          return {
+            reply: `I checked your Order #${latestOrder.id} status. Good news! Your 50% advance deposit (PKR ${(latestOrder.totalPkr * 0.5).toLocaleString()}) has been successfully verified! We've already started preparing your delicious custom cake. Let me know if you need to make any design tweaks!`,
+            action: null,
+            cartItemId: null,
+            escalated: false,
+          };
+        } else if (latestOrder.paymentScreenshotUrl) {
+          return {
+            reply: `We've received your transfer receipt / transaction ID for Order #${latestOrder.id}. Our auto-OCR verification system is currently matching it with the baker's preferred Easypaisa/Bank details. We will notify you the second it's fully confirmed!`,
+            action: null,
+            cartItemId: null,
+            escalated: false,
+          };
+        } else {
+          return {
+            reply: `Your Order #${latestOrder.id} is currently pending confirmation. Since the total is PKR ${latestOrder.totalPkr.toLocaleString()}, a 50% advance deposit (PKR ${(latestOrder.totalPkr * 0.5).toLocaleString()}) is required. Please transfer to the baker's Easypaisa (0300-1234567) or Bank account and upload your receipt screenshot/TID to confirm!`,
+            action: null,
+            cartItemId: null,
+            escalated: false,
+          };
+        }
+      } else {
+        return {
+          reply: `Your Order #${latestOrder.id} is confirmed! Since the total is PKR ${latestOrder.totalPkr.toLocaleString()}, no advance deposit is required. You can pay the full amount via Cash on Delivery when it is delivered.`,
+          action: null,
+          cartItemId: null,
+          escalated: false,
+        };
+      }
+    }
+  }
+
   const ragChunks = await retrieveKnowledge(bakerId, message, 3, 0.1);
   const ragContext = formatRetrievedContext(ragChunks);
 

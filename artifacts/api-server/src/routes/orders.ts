@@ -10,6 +10,7 @@ import {
   CreateOrderBody,
   ListOrdersQueryParams,
 } from "@workspace/api-zod";
+import { triggerPaymentOCRVerification } from "../lib/ocr";
 
 const router: IRouter = Router();
 
@@ -40,7 +41,30 @@ router.post("/orders", async (req, res): Promise<void> => {
     return;
   }
   const [order] = await db.insert(ordersTable).values(parsed.data as any).returning();
+  
+  // Auto-trigger OCR verification if a payment screenshot URL is provided on checkout
+  if (parsed.data.paymentScreenshotUrl) {
+    triggerPaymentOCRVerification(order.id).catch((err) =>
+      console.error("Auto-OCR payment verification failed asynchronously:", err)
+    );
+  }
+
   res.status(201).json(formatOrder(order));
+});
+
+// POST /orders/:orderId/verify-payment
+router.post("/orders/:orderId/verify-payment", async (req, res): Promise<void> => {
+  const orderId = parseInt(req.params.orderId, 10);
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: "Invalid order ID" });
+    return;
+  }
+  const result = await triggerPaymentOCRVerification(orderId);
+  if (!result) {
+    res.status(400).json({ error: "No screenshot URL found on this order or verification failed." });
+    return;
+  }
+  res.json(result);
 });
 
 // GET /orders/:orderId

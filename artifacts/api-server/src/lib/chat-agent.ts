@@ -303,10 +303,32 @@ export async function generateAgentReply(
     lowerMsg.includes("assalam")
   ) {
     const greeting = agentConf.customGreeting ?? `Assalam-o-Alaikum! Welcome to ${baker.businessName}.`;
-    const personalNote = memory ? " Good to hear from you again!" : "";
+    let personalNote = "";
+    if (memory) {
+      const prefs = (memory.preferences ?? {}) as Record<string, any>;
+      const details: string[] = [];
+      if (prefs.eggless) {
+        details.push("eggless treats");
+      }
+      if (prefs.allergies && Array.isArray(prefs.allergies) && prefs.allergies.length > 0) {
+        details.push(`allergy to ${prefs.allergies.join(", ")}`);
+      }
+      if (prefs.preferredArea) {
+        details.push(`delivery in ${prefs.preferredArea}`);
+      }
+      if (prefs.favoriteProducts && Array.isArray(prefs.favoriteProducts) && prefs.favoriteProducts.length > 0) {
+        details.push(`favorites like ${prefs.favoriteProducts[0]}`);
+      }
+
+      if (details.length > 0) {
+        personalNote = ` Good to hear from you again! I still remember your preferences for ${details.join(", ")}, and will make sure to tailor your choices accordingly.`;
+      } else {
+        personalNote = " Good to hear from you again!";
+      }
+    }
     const available = products.filter((p) => p.isAvailable);
     return {
-      reply: `${greeting}${personalNote} I'm here to help with orders and questions.\n\nWe have ${available.length} items available. Would you like to see our menu?`,
+      reply: `${greeting}${personalNote} I'm here to help you order or answer any questions.\n\nWe have ${available.length} items available today. Would you like to see our menu?`,
       action: null,
       cartItemId: null,
       escalated: false,

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, desc, asc, and } from "drizzle-orm";
 import { db, ordersTable } from "@workspace/db";
 import {
   CreateOrderBody,
@@ -11,6 +11,7 @@ import {
 const router: IRouter = Router();
 
 router.get("/orders", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const parsed = ListOrdersQueryParams.safeParse(req.query);
   const limitVal = parsed.success && parsed.data.limit ? parsed.data.limit : 100;
   const sortVal = parsed.success && parsed.data.sort ? parsed.data.sort : "-created_at";
@@ -22,6 +23,7 @@ router.get("/orders", async (req, res): Promise<void> => {
   const orders = await db
     .select()
     .from(ordersTable)
+    .where(eq(ordersTable.userId, userId))
     .orderBy(orderBy)
     .limit(limitVal);
 
@@ -29,6 +31,7 @@ router.get("/orders", async (req, res): Promise<void> => {
 });
 
 router.post("/orders/bulk", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const parsed = BulkCreateOrdersBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -36,6 +39,7 @@ router.post("/orders/bulk", async (req, res): Promise<void> => {
   }
 
   const ordersData = parsed.data.orders.map((o) => ({
+    userId,
     customerName: o.customerName,
     customerPhone: o.customerPhone ?? null,
     cakeType: o.cakeType,
@@ -59,6 +63,7 @@ router.post("/orders/bulk", async (req, res): Promise<void> => {
 });
 
 router.post("/orders", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -69,6 +74,7 @@ router.post("/orders", async (req, res): Promise<void> => {
   const [order] = await db
     .insert(ordersTable)
     .values({
+      userId,
       customerName: data.customerName,
       customerPhone: data.customerPhone ?? null,
       cakeType: data.cakeType,
@@ -92,6 +98,7 @@ router.post("/orders", async (req, res): Promise<void> => {
 });
 
 router.get("/orders/:id", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) {
@@ -102,7 +109,7 @@ router.get("/orders/:id", async (req, res): Promise<void> => {
   const [order] = await db
     .select()
     .from(ordersTable)
-    .where(eq(ordersTable.id, id));
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId)));
 
   if (!order) {
     res.status(404).json({ error: "Order not found" });
@@ -113,6 +120,7 @@ router.get("/orders/:id", async (req, res): Promise<void> => {
 });
 
 router.patch("/orders/:id", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) {
@@ -148,7 +156,7 @@ router.patch("/orders/:id", async (req, res): Promise<void> => {
   const [order] = await db
     .update(ordersTable)
     .set(updateData)
-    .where(eq(ordersTable.id, id))
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId)))
     .returning();
 
   if (!order) {
@@ -160,6 +168,7 @@ router.patch("/orders/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/orders/:id", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = parseInt(raw, 10);
   if (isNaN(id)) {
@@ -169,7 +178,7 @@ router.delete("/orders/:id", async (req, res): Promise<void> => {
 
   const [order] = await db
     .delete(ordersTable)
-    .where(eq(ordersTable.id, id))
+    .where(and(eq(ordersTable.id, id), eq(ordersTable.userId, userId)))
     .returning();
 
   if (!order) {

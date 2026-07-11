@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const bakerKnowledgeTable = pgTable("baker_knowledge", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   bakerName: text("baker_name").notNull().default("Zara Ahmed"),
   businessName: text("business_name").notNull().default("Sweet Tooth"),
   whatsappNumber: text("whatsapp_number"),
@@ -24,6 +25,7 @@ export type BakerKnowledge = typeof bakerKnowledgeTable.$inferSelect;
 
 export const chatSessionsTable = pgTable("chat_sessions", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   sessionId: text("session_id").notNull().unique(),
   customerName: text("customer_name"),
   messages: jsonb("messages").notNull().default([]),

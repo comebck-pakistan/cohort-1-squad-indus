@@ -1,13 +1,14 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, bakerKnowledgeTable, chatSessionsTable, ordersTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
 // ── GET /agent/knowledge ─────────────────────────────────────────────────────
-router.get("/agent/knowledge", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(bakerKnowledgeTable).limit(1);
+router.get("/agent/knowledge", async (req, res): Promise<void> => {
+  const userId = req.userId;
+  const rows = await db.select().from(bakerKnowledgeTable).where(eq(bakerKnowledgeTable.userId, userId)).limit(1);
   if (rows.length === 0) {
     res.json({
       id: null,
@@ -29,11 +30,13 @@ router.get("/agent/knowledge", async (_req, res): Promise<void> => {
 
 // ── POST /agent/knowledge ────────────────────────────────────────────────────
 router.post("/agent/knowledge", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const body = req.body as Record<string, unknown>;
-  const rows = await db.select().from(bakerKnowledgeTable).limit(1);
+  const rows = await db.select().from(bakerKnowledgeTable).where(eq(bakerKnowledgeTable.userId, userId)).limit(1);
 
   if (rows.length === 0) {
     const [created] = await db.insert(bakerKnowledgeTable).values({
+      userId,
       bakerName: String(body.bakerName ?? "Zara Ahmed"),
       businessName: String(body.businessName ?? "Sweet Tooth"),
       whatsappNumber: body.whatsappNumber ? String(body.whatsappNumber) : null,
@@ -61,49 +64,44 @@ router.post("/agent/knowledge", async (req, res): Promise<void> => {
         customPolicies: body.customPolicies ? String(body.customPolicies) : rows[0].customPolicies,
         menu: (body.menu as object[]) ?? rows[0].menu,
       })
-      .where(eq(bakerKnowledgeTable.id, rows[0].id))
+      .where(and(eq(bakerKnowledgeTable.id, rows[0].id), eq(bakerKnowledgeTable.userId, userId)))
       .returning();
     res.json(updated);
   }
 });
 
 // ── POST /agent/chat ─────────────────────────────────────────────────────────
-// Stateful SSE streaming: history is loaded from DB, not trusted from frontend
 router.post("/agent/chat", async (req, res): Promise<void> => {
-  const { sessionId, message } = req.body as {
-    sessionId: string;
-    message: string;
-  };
+  const userId = req.userId;
+  const { sessionId, message } = req.body as { sessionId: string; message: string };
 
   if (!sessionId || !message) {
     res.status(400).json({ error: "sessionId and message required" });
     return;
   }
 
-  // Load conversation history from DB (memory-based, not stateless)
-  const sessionRows = await db.select().from(chatSessionsTable).where(eq(chatSessionsTable.sessionId, sessionId)).limit(1);
+  // Load conversation history from DB (scoped to this user's session)
+  const sessionRows = await db.select().from(chatSessionsTable)
+    .where(and(eq(chatSessionsTable.sessionId, sessionId), eq(chatSessionsTable.userId, userId)))
+    .limit(1);
   const dbHistory = (sessionRows[0]?.messages ?? []) as Array<{ role: "user" | "assistant"; content: string }>;
 
-  // Load baker knowledge
-  const knowledgeRows = await db.select().from(bakerKnowledgeTable).limit(1);
+  // Load this user's baker knowledge
+  const knowledgeRows = await db.select().from(bakerKnowledgeTable).where(eq(bakerKnowledgeTable.userId, userId)).limit(1);
   const knowledge = knowledgeRows[0];
 
-  // Build menu text — only include AVAILABLE items
   type MenuItem = { name: string; price: string; unit?: string; description?: string; eggless?: boolean; available?: boolean };
   const allMenu = Array.isArray(knowledge?.menu) ? (knowledge.menu as MenuItem[]) : [];
   const availableMenu = allMenu.filter(item => item.available !== false);
 
-  const menuText =
-    availableMenu.length > 0
-      ? availableMenu
-          .map(item => {
-            const unit = item.unit || "per piece";
-            const egglessNote = item.eggless ? " ✓ eggless available" : "";
-            const desc = item.description ? ` — ${item.description}` : "";
-            return `• ${item.name}: PKR ${item.price} ${unit}${egglessNote}${desc}`;
-          })
-          .join("\n")
-      : "Menu not configured yet. Please ask the baker for details.";
+  const menuText = availableMenu.length > 0
+    ? availableMenu.map(item => {
+        const unit = item.unit || "per piece";
+        const egglessNote = item.eggless ? " ✓ eggless available" : "";
+        const desc = item.description ? ` — ${item.description}` : "";
+        return `• ${item.name}: PKR ${item.price} ${unit}${egglessNote}${desc}`;
+      }).join("\n")
+    : "Menu not configured yet. Please ask the baker for details.";
 
   const unavailableItems = allMenu.filter(item => item.available === false).map(i => i.name);
 
@@ -128,7 +126,7 @@ ${knowledge?.customPolicies ? `\nPOLICIES:\n${knowledge.customPolicies}` : ""}
 ORDERING:
 When a customer wants to place an order, collect:
 1. Their name
-2. What they want (item + quantity — use the item's unit, e.g. "2 dozen cupcakes", "1 chocolate cake per kg")
+2. What they want (item + quantity — use the item's unit, e.g. "2 dozen cupcakes", "1 chocolate cake")
 3. Delivery date and time
 4. Delivery address OR confirm pickup
 5. Any special requests (flavors, design, allergies)
@@ -137,7 +135,7 @@ When a customer wants to place an order, collect:
 Once you have all details confirmed, output EXACTLY this on its own line:
 ORDER_JSON:{"customerName":"...","cakeType":"...","weight":"...","deliveryDate":"YYYY-MM-DD","deliveryTime":"...","deliveryType":"delivery or pickup","specialRequests":"...","customerPhone":"...","price":0,"source":"agent"}
 
-Set price=0; the baker confirms the final price. Use "cakeType" for the full item description (e.g. "Chocolate Cupcakes x24").
+Set price=0; the baker confirms the final price.
 
 Keep tone warm and friendly. Use Urdu naturally (Ji, Shukriya, Zaroor). Respond concisely.`;
 
@@ -147,7 +145,7 @@ Keep tone warm and friendly. Use Urdu naturally (Ji, Shukriya, Zaroor). Respond 
 
   const chatMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
-    ...dbHistory.slice(-12), // last 12 turns from DB
+    ...dbHistory.slice(-12),
     { role: "user", content: message },
   ];
 
@@ -176,31 +174,27 @@ Keep tone warm and friendly. Use Urdu naturally (Ji, Shukriya, Zaroor). Respond 
     if (orderMatch) {
       try {
         const orderData = JSON.parse(orderMatch[1]);
-        const [newOrder] = await db
-          .insert(ordersTable)
-          .values({
-            customerName: orderData.customerName ?? "Unknown",
-            customerPhone: orderData.customerPhone ?? null,
-            cakeType: orderData.cakeType ?? "Custom Order",
-            weight: orderData.weight ?? null,
-            deliveryDate: orderData.deliveryDate ?? null,
-            deliveryTime: orderData.deliveryTime ?? null,
-            deliveryType: orderData.deliveryType ?? "delivery",
-            price: orderData.price ?? 0,
-            specialRequests: orderData.specialRequests ?? null,
-            status: "confirmed",
-            paymentStatus: "pending",
-            source: "agent",
-            confidence: 90,
-          })
-          .returning();
+        const [newOrder] = await db.insert(ordersTable).values({
+          userId,
+          customerName: orderData.customerName ?? "Unknown",
+          customerPhone: orderData.customerPhone ?? null,
+          cakeType: orderData.cakeType ?? "Custom Order",
+          weight: orderData.weight ?? null,
+          deliveryDate: orderData.deliveryDate ?? null,
+          deliveryTime: orderData.deliveryTime ?? null,
+          deliveryType: orderData.deliveryType ?? "delivery",
+          price: orderData.price ?? 0,
+          specialRequests: orderData.specialRequests ?? null,
+          status: "confirmed",
+          paymentStatus: "pending",
+          source: "agent",
+          confidence: 90,
+        }).returning();
         createdOrder = newOrder;
-      } catch {
-        // ignore parse errors
-      }
+      } catch { /* ignore parse errors */ }
     }
 
-    // Persist updated history to DB (this is the memory)
+    // Persist updated history (scoped to userId + sessionId)
     const updatedMessages = [
       ...dbHistory,
       { role: "user" as const, content: message },
@@ -209,13 +203,11 @@ Keep tone warm and friendly. Use Urdu naturally (Ji, Shukriya, Zaroor). Respond 
 
     if (sessionRows.length > 0) {
       await db.update(chatSessionsTable)
-        .set({
-          messages: updatedMessages,
-          orderCreated: createdOrder ? String((createdOrder as { id: number }).id) : sessionRows[0].orderCreated,
-        })
-        .where(eq(chatSessionsTable.sessionId, sessionId));
+        .set({ messages: updatedMessages, orderCreated: createdOrder ? String((createdOrder as { id: number }).id) : sessionRows[0].orderCreated })
+        .where(and(eq(chatSessionsTable.sessionId, sessionId), eq(chatSessionsTable.userId, userId)));
     } else {
       await db.insert(chatSessionsTable).values({
+        userId,
         sessionId,
         messages: updatedMessages,
         orderCreated: createdOrder ? String((createdOrder as { id: number }).id) : null,
@@ -232,19 +224,22 @@ Keep tone warm and friendly. Use Urdu naturally (Ji, Shukriya, Zaroor). Respond 
 
 // ── POST /agent/delivery-message ─────────────────────────────────────────────
 router.post("/agent/delivery-message", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const { orderId } = req.body as { orderId: number };
   if (!orderId) {
     res.status(400).json({ error: "orderId required" });
     return;
   }
 
-  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
+  // Enforce ownership: only allow access to the user's own orders
+  const [order] = await db.select().from(ordersTable)
+    .where(and(eq(ordersTable.id, orderId), eq(ordersTable.userId, userId)));
   if (!order) {
     res.status(404).json({ error: "Order not found" });
     return;
   }
 
-  const knowledgeRows = await db.select().from(bakerKnowledgeTable).limit(1);
+  const knowledgeRows = await db.select().from(bakerKnowledgeTable).where(eq(bakerKnowledgeTable.userId, userId)).limit(1);
   const bakerName = knowledgeRows[0]?.bakerName ?? "Zara";
 
   try {
@@ -252,23 +247,10 @@ router.post("/agent/delivery-message", async (req, res): Promise<void> => {
       model: "gpt-5.4-mini",
       max_completion_tokens: 200,
       messages: [
-        {
-          role: "system",
-          content: `You are ${bakerName}'s bakery assistant. Write warm, friendly WhatsApp messages for Pakistani customers. Mix English and Urdu naturally.`,
-        },
-        {
-          role: "user",
-          content: `Write a delivery confirmation WhatsApp message for:
-Customer: ${order.customerName}
-Item: ${order.cakeType}${order.weight ? ` (${order.weight})` : ""}
-${order.deliveryType === "pickup" ? "They picked it up." : "We just delivered to them."}
-Baker name: ${bakerName}
-
-Keep it warm, 2-3 sentences, include an emoji or two.`,
-        },
+        { role: "system", content: `You are ${bakerName}'s bakery assistant. Write warm, friendly WhatsApp messages for Pakistani customers. Mix English and Urdu naturally.` },
+        { role: "user", content: `Write a delivery confirmation WhatsApp message for:\nCustomer: ${order.customerName}\nItem: ${order.cakeType}${order.weight ? ` (${order.weight})` : ""}\n${order.deliveryType === "pickup" ? "They picked it up." : "We just delivered to them."}\nBaker name: ${bakerName}\n\nKeep it warm, 2-3 sentences, include an emoji or two.` },
       ],
     });
-
     const msg = response.choices[0]?.message?.content ?? "";
     res.json({ message: msg, order });
   } catch (err) {

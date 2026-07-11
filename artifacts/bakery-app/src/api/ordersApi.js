@@ -1,4 +1,11 @@
 const BASE = '/api/orders';
+const API_KEY = import.meta.env.VITE_INTERNAL_API_KEY || '';
+
+function authHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (API_KEY) headers['x-api-key'] = API_KEY;
+  return headers;
+}
 
 function toSnake(order) {
   if (!order || typeof order !== 'object') return order;
@@ -28,14 +35,14 @@ function toSnake(order) {
 export const OrdersApi = {
   async list(sort = '-delivery_date', limit = 100) {
     const params = new URLSearchParams({ sort, limit: String(limit) });
-    const res = await fetch(`${BASE}?${params}`);
+    const res = await fetch(`${BASE}?${params}`, { headers: authHeaders() });
     if (!res.ok) throw new Error('Failed to fetch orders');
     const data = await res.json();
     return Array.isArray(data) ? data.map(toSnake) : data;
   },
 
   async get(id) {
-    const res = await fetch(`${BASE}/${id}`);
+    const res = await fetch(`${BASE}/${id}`, { headers: authHeaders() });
     if (!res.ok) throw new Error('Order not found');
     return toSnake(await res.json());
   },
@@ -43,7 +50,7 @@ export const OrdersApi = {
   async create(data) {
     const res = await fetch(BASE, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to create order');
@@ -67,7 +74,7 @@ export const OrdersApi = {
     }
     const res = await fetch(`${BASE}/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(camelData),
     });
     if (!res.ok) throw new Error('Failed to update order');
@@ -75,14 +82,17 @@ export const OrdersApi = {
   },
 
   async delete(id) {
-    const res = await fetch(`${BASE}/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${BASE}/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to delete order');
   },
 
   async bulkCreate(orders) {
     const res = await fetch(`${BASE}/bulk`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ orders }),
     });
     if (!res.ok) throw new Error('Failed to bulk create orders');

@@ -14,6 +14,8 @@ import Calendar from './pages/Calendar';
 import Profile from './pages/Profile';
 import NewOrder from './pages/NewOrder';
 import Customers from './pages/Customers';
+import AgentHub from './pages/AgentHub';
+import AgentChat from './components/AgentChat';
 
 function App() {
   return (
@@ -30,10 +32,12 @@ function App() {
               <Route path="/auto-import" element={<AutoImport />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/customers" element={<Customers />} />
+              <Route path="/agent" element={<AgentHub />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />
           </Routes>
+          <AgentChat />
         </Router>
         <Toaster />
       </QueryClientProvider>

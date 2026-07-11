@@ -10,6 +10,7 @@ import {
 import { StatusBadge, PaymentBadge, ConfidenceBadge } from '@/components/orders/StatusBadge';
 import { formatFullDate, formatPKR, statusConfig } from '@/lib/utils';
 import { Order } from '@/api/ordersApi';
+import { AgentApi } from '@/api/agentApi';
 
 const timelineSteps = [
   { key: 'pending_info', label: 'Order Received', icon: Sparkles },
@@ -39,6 +40,9 @@ export default function OrderDetail() {
   const [editForm, setEditForm] = useState({});
   const [saveLoading, setSaveLoading] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [deliveryMsg, setDeliveryMsg] = useState('');
+  const [deliveryMsgLoading, setDeliveryMsgLoading] = useState(false);
+  const [deliveryMsgCopied, setDeliveryMsgCopied] = useState(false);
 
   useEffect(() => {
     Order.get(id).then(o => {
@@ -54,6 +58,14 @@ export default function OrderDetail() {
       const updated = await Order.update(order.id, { status: newStatus });
       setOrder(updated);
       if (newStatus === 'completed') navigate('/');
+      if (newStatus === 'delivered') {
+        setDeliveryMsgLoading(true);
+        try {
+          const { message } = await AgentApi.getDeliveryMessage(order.id);
+          setDeliveryMsg(message);
+        } catch { /* non-critical */ }
+        setDeliveryMsgLoading(false);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -297,6 +309,38 @@ export default function OrderDetail() {
             placeholder="Add notes for yourself..." rows={3}
             className="w-full bg-input rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
         </div>
+
+        {/* Delivery Message */}
+        <AnimatePresence>
+          {(deliveryMsg || deliveryMsgLoading) && (
+            <motion.div key="delivery-msg" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="bg-[#25D366]/5 border border-[#25D366]/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                <p className="text-xs font-semibold text-[#25D366]">AI Delivery Message</p>
+              </div>
+              {deliveryMsgLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="w-3 h-3 border-2 border-[#25D366]/30 border-t-[#25D366] rounded-full animate-spin" />
+                  Generating message…
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-foreground leading-relaxed mb-3">{deliveryMsg}</p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(deliveryMsg);
+                      setDeliveryMsgCopied(true);
+                      setTimeout(() => setDeliveryMsgCopied(false), 2000);
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-medium bg-[#25D366] text-white px-3 py-1.5 rounded-full">
+                    {deliveryMsgCopied ? <><Check className="w-3 h-3" /> Copied!</> : <><MessageCircle className="w-3 h-3" /> Copy for WhatsApp</>}
+                  </button>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Actions */}
         {!isCancelled && order.status !== 'completed' && (

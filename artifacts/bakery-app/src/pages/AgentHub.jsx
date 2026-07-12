@@ -31,7 +31,7 @@ export default function AgentHub() {
   const [copied, setCopied] = useState(false);
 
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
-  const menuUrl = user ? `${window.location.origin}${basePath}/menu/${user.id}` : null;
+  const menuUrl = user ? `${window.location.origin}${basePath}/shop/${user.id}` : null;
 
   const copyLink = () => {
     if (!menuUrl) return;

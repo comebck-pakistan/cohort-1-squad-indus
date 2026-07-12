@@ -166,6 +166,20 @@ function AppWithClerk() {
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
       appearance={clerkAppearance}
+      localization={{
+        signIn: {
+          start: {
+            title: 'Sign in to Sweet Tooth',
+            subtitle: 'Welcome back, baker! 🧁',
+          },
+        },
+        signUp: {
+          start: {
+            title: 'Join Sweet Tooth',
+            subtitle: 'Start managing your bakery with AI 🎂',
+          },
+        },
+      }}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       afterSignInUrl={`${basePath}/dashboard`}
@@ -180,7 +194,7 @@ function AppWithClerk() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
-          <Route path="/menu/:userId" element={<MenuPage />} />
+          <Route path="/shop/:userId" element={<MenuPage />} />
           <Route path="/orders/new" element={<ProtectedRoute><NewOrder /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>

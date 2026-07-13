@@ -16,6 +16,16 @@ import { requireBakerAuth } from "../middlewares/auth.js";
 
 const router = Router();
 
+function toPublicBaker(baker: Record<string, unknown>) {
+  const { passwordHash, metaWebhookToken, whatsappNumber, email, paymentDetails, ...publicBaker } = baker;
+  return publicBaker;
+}
+
+function toAuthenticatedBaker(baker: Record<string, unknown>) {
+  const { passwordHash, metaWebhookToken, ...safeBaker } = baker;
+  return safeBaker;
+}
+
 // GET /bakers
 router.get("/bakers", async (req, res): Promise<void> => {
   const { city, area } = req.query as Record<string, string>;
@@ -28,7 +38,7 @@ router.get("/bakers", async (req, res): Promise<void> => {
         .from(productsTable).where(eq(productsTable.bakerId, b.id));
       const categories = [...new Set(products.map((p) => p.category))];
       const startingPrice = products.length > 0 ? Math.min(...products.map((p) => p.basePricePkr)) : null;
-      return { ...b, deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
+      return { ...toPublicBaker(b), deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
     })
   );
   res.json(bakerCards);
@@ -65,7 +75,7 @@ router.post("/bakers", async (req, res): Promise<void> => {
     }).returning();
     
     const token = signToken({ bakerId: baker.id, email: baker.email });
-    res.status(201).json({ token, baker: { ...baker, deliveryAreas: baker.deliveryAreas ?? [] } });
+    res.status(201).json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });
   } catch (error: any) {
     if (error.code === "23505") {
       res.status(400).json({ error: "Email or WhatsApp number already registered" });
@@ -103,7 +113,7 @@ router.post("/bakers/login", async (req, res): Promise<void> => {
   }
 
   const token = signToken({ bakerId: baker.id, email: baker.email });
-  res.json({ token, baker: { ...baker, deliveryAreas: baker.deliveryAreas ?? [] } });
+  res.json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });
 });
 
 // GET /bakers/:bakerId
@@ -118,7 +128,7 @@ router.get("/bakers/:bakerId", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Baker not found" });
     return;
   }
-  res.json({ ...baker, deliveryAreas: baker.deliveryAreas ?? [] });
+  res.json({ ...toPublicBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] });
 });
 
 // PATCH /bakers/:bakerId (Secured)

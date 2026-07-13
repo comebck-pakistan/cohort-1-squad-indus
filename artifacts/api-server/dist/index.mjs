@@ -57751,6 +57751,14 @@ function requireBakerAuth(req, res, next) {
 
 // artifacts/api-server/src/routes/bakers.ts
 var router2 = (0, import_express2.Router)();
+function toPublicBaker(baker) {
+  const { passwordHash, metaWebhookToken, whatsappNumber, email: email3, paymentDetails, ...publicBaker } = baker;
+  return publicBaker;
+}
+function toAuthenticatedBaker(baker) {
+  const { passwordHash, metaWebhookToken, ...safeBaker } = baker;
+  return safeBaker;
+}
 router2.get("/bakers", async (req, res) => {
   const { city, area } = req.query;
   let query = db.select().from(bakersTable).$dynamic();
@@ -57761,7 +57769,7 @@ router2.get("/bakers", async (req, res) => {
       const products = await db.select({ category: productsTable.category, basePricePkr: productsTable.basePricePkr }).from(productsTable).where(eq(productsTable.bakerId, b.id));
       const categories = [...new Set(products.map((p) => p.category))];
       const startingPrice = products.length > 0 ? Math.min(...products.map((p) => p.basePricePkr)) : null;
-      return { ...b, deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
+      return { ...toPublicBaker(b), deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
     })
   );
   res.json(bakerCards);
@@ -57791,7 +57799,7 @@ router2.post("/bakers", async (req, res) => {
       passwordHash
     }).returning();
     const token = signToken({ bakerId: baker.id, email: baker.email });
-    res.status(201).json({ token, baker: { ...baker, deliveryAreas: baker.deliveryAreas ?? [] } });
+    res.status(201).json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });
   } catch (error40) {
     if (error40.code === "23505") {
       res.status(400).json({ error: "Email or WhatsApp number already registered" });
@@ -57822,7 +57830,7 @@ router2.post("/bakers/login", async (req, res) => {
     return;
   }
   const token = signToken({ bakerId: baker.id, email: baker.email });
-  res.json({ token, baker: { ...baker, deliveryAreas: baker.deliveryAreas ?? [] } });
+  res.json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });
 });
 router2.get("/bakers/:bakerId", async (req, res) => {
   const params = GetBakerParams.safeParse(req.params);
@@ -57835,7 +57843,7 @@ router2.get("/bakers/:bakerId", async (req, res) => {
     res.status(404).json({ error: "Baker not found" });
     return;
   }
-  res.json({ ...baker, deliveryAreas: baker.deliveryAreas ?? [] });
+  res.json({ ...toPublicBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] });
 });
 router2.patch("/bakers/:bakerId", requireBakerAuth, async (req, res) => {
   const params = UpdateBakerParams.safeParse(req.params);
@@ -58057,6 +58065,10 @@ var notifications_default = router3;
 // artifacts/api-server/src/routes/marketplace.ts
 var import_express4 = __toESM(require_express2(), 1);
 var router4 = (0, import_express4.Router)();
+function toPublicBaker2(baker) {
+  const { passwordHash, metaWebhookToken, whatsappNumber, email: email3, paymentDetails, ...publicBaker } = baker;
+  return publicBaker;
+}
 router4.get("/marketplace/featured", async (req, res) => {
   const { city, area } = req.query;
   let query = db.select().from(bakersTable).where(eq(bakersTable.marketplaceVisible, true)).$dynamic();
@@ -58067,7 +58079,7 @@ router4.get("/marketplace/featured", async (req, res) => {
       const products = await db.select({ category: productsTable.category, basePricePkr: productsTable.basePricePkr }).from(productsTable).where(eq(productsTable.bakerId, b.id));
       const categories = [...new Set(products.map((p) => p.category))];
       const startingPrice = products.length > 0 ? Math.min(...products.map((p) => p.basePricePkr)) : null;
-      return { ...b, deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
+      return { ...toPublicBaker2(b), deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
     })
   );
   res.json(bakerCards);
@@ -58084,7 +58096,7 @@ router4.get("/marketplace/search", async (req, res) => {
       const products2 = await db.select({ category: productsTable.category, basePricePkr: productsTable.basePricePkr }).from(productsTable).where(eq(productsTable.bakerId, b.id));
       const categories = [...new Set(products2.map((p) => p.category))];
       const startingPrice = products2.length > 0 ? Math.min(...products2.map((p) => p.basePricePkr)) : null;
-      return { ...b, deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
+      return { ...toPublicBaker2(b), deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
     })
   );
   let productQuery = db.select().from(productsTable).where(eq(productsTable.isAvailable, true)).$dynamic();

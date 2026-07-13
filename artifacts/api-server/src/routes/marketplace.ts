@@ -4,6 +4,11 @@ import { db, bakersTable, productsTable } from "@workspace/db";
 
 const router = Router();
 
+function toPublicBaker(baker: Record<string, unknown>) {
+  const { passwordHash, metaWebhookToken, whatsappNumber, email, paymentDetails, ...publicBaker } = baker;
+  return publicBaker;
+}
+
 // GET /marketplace/featured
 router.get("/marketplace/featured", async (req, res): Promise<void> => {
   const { city, area } = req.query as Record<string, string>;
@@ -16,7 +21,7 @@ router.get("/marketplace/featured", async (req, res): Promise<void> => {
         .from(productsTable).where(eq(productsTable.bakerId, b.id));
       const categories = [...new Set(products.map((p) => p.category))];
       const startingPrice = products.length > 0 ? Math.min(...products.map((p) => p.basePricePkr)) : null;
-      return { ...b, deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
+      return { ...toPublicBaker(b), deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
     })
   );
   res.json(bakerCards);
@@ -38,7 +43,7 @@ router.get("/marketplace/search", async (req, res): Promise<void> => {
           .from(productsTable).where(eq(productsTable.bakerId, b.id));
         const categories = [...new Set(products.map((p) => p.category))];
         const startingPrice = products.length > 0 ? Math.min(...products.map((p) => p.basePricePkr)) : null;
-        return { ...b, deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
+        return { ...toPublicBaker(b), deliveryAreas: b.deliveryAreas ?? [], categories, startingPrice };
       })
   );
   // Search products

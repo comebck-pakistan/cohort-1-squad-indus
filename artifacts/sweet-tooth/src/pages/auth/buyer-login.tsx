@@ -1,20 +1,30 @@
 import { Link } from "wouter";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { isFirebaseConfigured, rememberGoogleUser, signInWithGoogle } from "@/lib/firebase-auth";
+import { getGoogleRedirectUser, isFirebaseConfigured, rememberGoogleUser, signInWithGoogle } from "@/lib/firebase-auth";
 
 export default function BuyerLogin() {
   const [, navigate] = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    getGoogleRedirectUser()
+      .then((user) => {
+        if (!active || !user) return;
+        rememberGoogleUser(user, "buyer");
+        navigate("/bakers");
+      })
+      .catch((cause) => active && setError(cause instanceof Error ? cause.message : "Google sign-in could not be completed."));
+    return () => { active = false; };
+  }, [navigate]);
+
   const loginWithGoogle = async () => {
     setLoading(true);
     setError(null);
     try {
-      const user = await signInWithGoogle();
-      rememberGoogleUser(user, "buyer");
-      navigate("/bakers");
+      await signInWithGoogle();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Google sign-in could not be completed.");
     } finally {

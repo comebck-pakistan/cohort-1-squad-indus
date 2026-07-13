@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, getAuth, signInWithPopup, type User } from "firebase/auth";
+import { GoogleAuthProvider, getAuth, getRedirectResult, signInWithRedirect, type User } from "firebase/auth";
 import { initializeApp, type FirebaseApp } from "firebase/app";
 
 const config = {
@@ -11,19 +11,29 @@ const config = {
 const configured = Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
 let app: FirebaseApp | null = null;
 
-export function isFirebaseConfigured() {
-  return configured;
-}
-
-export async function signInWithGoogle(): Promise<User> {
+function getFirebaseAuth() {
   if (!configured) {
     throw new Error("Google sign-in is not configured yet. Add the VITE_FIREBASE_* values in Vercel.");
   }
   app ??= initializeApp(config);
+  return getAuth(app);
+}
+
+export function isFirebaseConfigured() {
+  return configured;
+}
+
+export async function signInWithGoogle(): Promise<void> {
+  const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  const result = await signInWithPopup(getAuth(app), provider);
-  return result.user;
+  await signInWithRedirect(auth, provider);
+}
+
+export async function getGoogleRedirectUser(): Promise<User | null> {
+  if (!configured) return null;
+  const result = await getRedirectResult(getFirebaseAuth());
+  return result?.user ?? null;
 }
 
 export function rememberGoogleUser(user: User, role: "buyer" | "baker") {

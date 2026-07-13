@@ -9,6 +9,12 @@ CREATE TABLE IF NOT EXISTS sweet_tooth.bakers (
   city TEXT NOT NULL,
   area TEXT,
   whatsapp_number TEXT NOT NULL UNIQUE,
+  email TEXT UNIQUE,
+  password_hash TEXT,
+  require_advance BOOLEAN NOT NULL DEFAULT false,
+  advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000,
+  advance_percentage INTEGER NOT NULL DEFAULT 50,
+  payment_details TEXT NOT NULL DEFAULT '',
   delivery_areas TEXT[] NOT NULL DEFAULT '{}',
   cod_policy TEXT,
   return_policy TEXT,
@@ -69,6 +75,11 @@ CREATE TABLE IF NOT EXISTS sweet_tooth.orders (
   source TEXT NOT NULL DEFAULT 'marketplace',
   occasion TEXT,
   special_instructions TEXT,
+  flavour TEXT,
+  text_on_cake TEXT,
+  payment_screenshot_url TEXT,
+  advance_paid BOOLEAN NOT NULL DEFAULT false,
+  require_advance BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -200,6 +211,17 @@ CREATE INDEX IF NOT EXISTS baker_notes_baker_idx ON sweet_tooth.baker_notes (bak
 CREATE INDEX IF NOT EXISTS baker_reminders_baker_idx ON sweet_tooth.baker_reminders (baker_id);
 
 ALTER TABLE sweet_tooth.customers ADD COLUMN IF NOT EXISTS is_at_risk BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS require_advance BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_percentage INTEGER NOT NULL DEFAULT 50;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS payment_details TEXT NOT NULL DEFAULT '';
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS flavour TEXT;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS text_on_cake TEXT;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS advance_paid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS require_advance BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS order_id INTEGER;
 ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_product INTEGER;
 ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_packaging INTEGER;

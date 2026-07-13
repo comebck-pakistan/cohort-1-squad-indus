@@ -1,23 +1,12 @@
-import { readFileSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
 import { pool } from "@workspace/db";
+import schemaSql from "./bootstrap-schema.sql";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const sqlPath = resolve(__dirname, "bootstrap-schema.sql");
-const sql = readFileSync(sqlPath, "utf8");
+let bootstrapPromise: Promise<void> | undefined;
 
-async function main() {
-  try {
-    await pool.query(sql);
-    console.log("Schema bootstrap complete");
-  } catch (e) {
-    const err = e as Error;
-    console.error("Bootstrap failed:", err.message);
-    process.exit(1);
-  } finally {
-    await pool.end();
+/** Runs idempotent schema setup for a freshly provisioned Neon database. */
+export function ensureDatabase(): Promise<void> {
+  if (!bootstrapPromise) {
+    bootstrapPromise = pool.query(schemaSql).then(() => undefined);
   }
+  return bootstrapPromise;
 }
-
-void main();

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, or, sql } from "drizzle-orm";
+import { eq, inArray, or, sql } from "drizzle-orm";
 import { db, bakersTable, productsTable, reviewsTable, ordersTable } from "@workspace/db";
 import {
   GetBakerParams,
@@ -23,6 +23,13 @@ function normalizePakistanPhone(value: string): string | null {
   if (digits.length === 11 && digits.startsWith("0")) digits = `92${digits.slice(1)}`;
   if (digits.length === 10 && digits.startsWith("3")) digits = `92${digits}`;
   return /^923\d{9}$/.test(digits) ? `+${digits}` : null;
+}
+
+function phoneLookupVariants(value: string, normalized: string | null): string[] {
+  const raw = value.trim();
+  if (!normalized) return [raw];
+  const digits = normalized.slice(1);
+  return [...new Set([raw, normalized, digits, `0${digits.slice(2)}`, digits.slice(2)])];
 }
 
 function toPublicBaker(baker: Record<string, unknown>) {
@@ -129,9 +136,10 @@ router.post("/bakers/login", async (req, res): Promise<void> => {
 
   const { identifier, password } = parsed.data;
   const normalizedPhone = normalizePakistanPhone(identifier);
+  const phoneVariants = phoneLookupVariants(identifier, normalizedPhone);
   const [baker] = await db.select().from(bakersTable).where(or(
     eq(bakersTable.email, identifier.trim().toLowerCase()),
-    ...(normalizedPhone ? [eq(bakersTable.whatsappNumber, normalizedPhone)] : []),
+    inArray(bakersTable.whatsappNumber, phoneVariants),
   ));
   
   if (!baker || !baker.passwordHash) {

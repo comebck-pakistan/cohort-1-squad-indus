@@ -28,7 +28,7 @@ export default function BuyerLogin() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithGoogle();
+      completeLogin(await signInWithGoogle());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Google sign-in could not be completed.");
     } finally {

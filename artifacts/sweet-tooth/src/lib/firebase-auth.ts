@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, getAuth, getRedirectResult, onAuthStateChanged, signInWithRedirect, type User } from "firebase/auth";
+import { GoogleAuthProvider, getAuth, getRedirectResult, onAuthStateChanged, signInWithPopup, type User } from "firebase/auth";
 import { initializeApp, type FirebaseApp } from "firebase/app";
 
 const config = {
@@ -23,11 +23,14 @@ export function isFirebaseConfigured() {
   return configured;
 }
 
-export async function signInWithGoogle(): Promise<void> {
+export async function signInWithGoogle(): Promise<User> {
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  await signInWithRedirect(auth, provider);
+  // A popup keeps the user on the Vercel app. Redirect mode can become stuck
+  // on Firebase's handler page in browsers that restrict cross-site storage.
+  const result = await signInWithPopup(auth, provider);
+  return result.user;
 }
 
 export async function getGoogleRedirectUser(): Promise<User | null> {

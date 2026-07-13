@@ -17,6 +17,14 @@ import { rebuildBakerKnowledgeIndex } from "../lib/rag/pipeline.js";
 
 const router = Router();
 
+function normalizePakistanPhone(value: string): string | null {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) digits = `92${digits.slice(1)}`;
+  if (digits.length === 10 && digits.startsWith("3")) digits = `92${digits}`;
+  return /^923\d{9}$/.test(digits) ? `+${digits}` : null;
+}
+
 function toPublicBaker(baker: Record<string, unknown>) {
   const { passwordHash, metaWebhookToken, whatsappNumber, email, paymentDetails, ...publicBaker } = baker;
   const digits = String(whatsappNumber ?? "").replace(/\D/g, "");
@@ -80,12 +88,18 @@ router.post("/bakers", async (req, res): Promise<void> => {
     return;
   }
 
-  const { password, ...rest } = parsed.data;
+  const normalizedPhone = normalizePakistanPhone(parsed.data.whatsappNumber);
+  if (!normalizedPhone) {
+    res.status(400).json({ error: "Enter a valid Pakistani WhatsApp number, for example +92 300 1234567." });
+    return;
+  }
+  const { password, whatsappNumber: _whatsappNumber, ...rest } = parsed.data;
   const passwordHash = hashPassword(password);
 
   try {
     const [baker] = await db.insert(bakersTable).values({
       ...rest,
+      whatsappNumber: normalizedPhone,
       passwordHash,
     }).returning();
     
@@ -114,9 +128,10 @@ router.post("/bakers/login", async (req, res): Promise<void> => {
   }
 
   const { identifier, password } = parsed.data;
+  const normalizedPhone = normalizePakistanPhone(identifier);
   const [baker] = await db.select().from(bakersTable).where(or(
-    eq(bakersTable.email, identifier.toLowerCase()),
-    eq(bakersTable.whatsappNumber, identifier),
+    eq(bakersTable.email, identifier.trim().toLowerCase()),
+    ...(normalizedPhone ? [eq(bakersTable.whatsappNumber, normalizedPhone)] : []),
   ));
   
   if (!baker || !baker.passwordHash) {

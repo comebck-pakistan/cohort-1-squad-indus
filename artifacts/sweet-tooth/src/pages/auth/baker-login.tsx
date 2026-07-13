@@ -28,7 +28,7 @@ export default function BakerLogin() {
         <button type="button" onClick={() => chooseMethod("phone")} className={`rounded-md px-3 py-2 text-sm font-semibold ${!isEmail ? "bg-card text-primary shadow-sm" : "text-muted-foreground"}`}>WhatsApp number</button>
       </div>
       <div className="space-y-4">
-        <label className="block text-sm font-medium">{isEmail ? "Email address" : "WhatsApp number"}<input required type={isEmail ? "email" : "tel"} autoComplete={isEmail ? "email" : "tel"} placeholder={isEmail ? "you@gmail.com" : "+92 300 0000000"} value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="mt-1 w-full px-4 py-3 border border-border rounded-md bg-background" /></label>
+        <label className="block text-sm font-medium">{isEmail ? "Email address" : "WhatsApp number"}<input required type={isEmail ? "email" : "tel"} autoComplete={isEmail ? "email" : "tel"} inputMode={isEmail ? "email" : "tel"} placeholder={isEmail ? "you@gmail.com" : "0300 1234567 or +92 300 1234567"} value={identifier} onChange={(e) => setIdentifier(e.target.value)} className="mt-1 w-full px-4 py-3 border border-border rounded-md bg-background" /></label>
         <label className="block text-sm font-medium">Password<input required type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full px-4 py-3 border border-border rounded-md bg-background" /></label>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <button disabled={loading} className="w-full bg-primary text-primary-foreground py-3 rounded-md font-bold disabled:opacity-50">{loading ? "Signing in…" : "Sign in as baker"}</button>

@@ -21,6 +21,41 @@ export type AgentReply = {
   escalated: boolean;
 };
 
+const MENU_SCOPE_KEYWORDS = [
+  "menu", "product", "cake", "cupcake", "cookie", "dessert", "brownie", "pastry", "bake",
+  "price", "cost", "pkr", "size", "flavour", "flavor", "variant", "custom", "design",
+  "order", "cart", "buy", "book", "delivery", "deliver", "pickup", "area", "sector", "location",
+  "available", "stock", "lead time", "today", "tomorrow", "open", "close", "hours",
+  "payment", "pay", "cod", "cash", "advance", "receipt", "refund", "cancel", "status",
+  "egg", "vegan", "vegetarian", "gluten", "dairy", "nut", "allergy", "allergen", "halal",
+  "discount", "offer", "promo", "coupon", "sale", "deal", "ingredient", "recommend", "occasion",
+  "birthday", "wedding", "anniversary", "thank", "thanks", "hello", "hi", "salam", "assalam",
+];
+
+const PROMPT_INJECTION_PATTERNS = [
+  /ignore (all |any |the )?(previous|prior|above) (instructions|rules|message)/i,
+  /system prompt|developer message|jailbreak|reveal .*prompt/i,
+  /act as (?!a bakery|the bakery|an assistant)/i,
+  /show (me )?(your|the) (instructions|rules|memory|api key)/i,
+];
+
+export function isMenuScopedMessage(message: string, productNames: string[]): boolean {
+  const normalized = message.toLowerCase().trim();
+  if (!normalized) return false;
+  if (PROMPT_INJECTION_PATTERNS.some((pattern) => pattern.test(normalized))) return false;
+  if (productNames.some((name) => normalized.includes(name.toLowerCase()))) return true;
+  return MENU_SCOPE_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function menuScopeRefusal(businessName: string): AgentReply {
+  return {
+    reply: `I can help only with ${businessName}'s menu, ingredients and dietary labels, prices, availability, orders, delivery, and payment policy. What would you like to know about the bakery?`,
+    action: null,
+    cartItemId: null,
+    escalated: false,
+  };
+}
+
 async function notify(
   bakerId: number,
   type: string,
@@ -110,6 +145,13 @@ export async function generateAgentReply(
 
   const products = await db.select().from(productsTable).where(eq(productsTable.bakerId, bakerId));
   const lowerMsg = message.toLowerCase();
+
+  // This deterministic boundary runs before retrieval, custom replies, and the
+  // LLM. It prevents prompt injection and keeps every channel limited to the
+  // baker's menu and transactional support instead of general chat.
+  if (!isMenuScopedMessage(message, products.map((product) => product.name))) {
+    return menuScopeRefusal(baker.businessName);
+  }
 
   if (/(allerg|peanut|nut[ -]?free|gluten|dairy|lactose|vegan|halal|cross.?contamin)/.test(lowerMsg)) {
     const dietaryPolicy = agentConf.dietaryPolicy?.trim();
@@ -244,7 +286,10 @@ export async function generateAgentReply(
   // escalations, and sensitive order/payment status. Everything else can use
   // an LLM when OPENAI_API_KEY is configured, with the local rules as a safe
   // availability fallback if the provider is unavailable.
-  const llmReply = await generateLlmReply({
+  // Do not use the model without grounded bakery knowledge. Deterministic
+  // handlers below safely handle menu/order questions when retrieval finds no
+  // matching source.
+  const llmReply = ragContext ? await generateLlmReply({
     businessName: baker.businessName,
     customerMessage: message,
     products: products.map((product) => ({
@@ -256,7 +301,7 @@ export async function generateAgentReply(
     })),
     knowledge: ragContext,
     memory: memoryContext,
-  });
+  }) : null;
   if (llmReply) return { reply: llmReply, action: null, cartItemId: null, escalated: false };
 
   if (

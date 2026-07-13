@@ -297,6 +297,19 @@ export default function DashboardAnalytics() {
                     </div>
                   </div>
                 </div>
+
+                <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                  <h3 className="font-serif text-xl font-bold">Most requested delivery areas</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Based on checkout locations from your marketplace orders.</p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {((analytics as any)?.topDeliveryAreas ?? []).map((item: { area: string; orders: number }) => (
+                      <div key={item.area} className="rounded-lg bg-primary/10 px-4 py-3 text-sm text-primary">
+                        <span className="font-semibold">{item.area}</span><span className="ml-2 font-mono text-xs">{item.orders} orders</span>
+                      </div>
+                    ))}
+                    {!((analytics as any)?.topDeliveryAreas?.length) && <p className="text-sm text-muted-foreground">Delivery-area data appears after customers complete checkout.</p>}
+                  </div>
+                </div>
               </>
             ) : (
               /* Returning Customer Activity & Marketing Outreach Hub */

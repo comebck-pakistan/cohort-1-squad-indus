@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, ordersTable } from "@workspace/db";
+import { db, customersTable, ordersTable } from "@workspace/db";
 import {
   GetOrderParams,
   UpdateOrderStatusParams,
@@ -40,7 +40,38 @@ router.post("/orders", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [order] = await db.insert(ordersTable).values(parsed.data as any).returning();
+  const phone = parsed.data.buyerWhatsapp.replace(/\s+/g, "").trim();
+  const [existingCustomer] = await db.select().from(customersTable)
+    .where(and(eq(customersTable.bakerId, parsed.data.bakerId), eq(customersTable.whatsappNumber, phone)));
+
+  const customer = existingCustomer
+    ? (await db.update(customersTable)
+      .set({
+        name: parsed.data.buyerName.trim(),
+        preferredArea: parsed.data.buyerArea?.trim() || existingCustomer.preferredArea,
+        totalOrders: existingCustomer.totalOrders + 1,
+        totalSpentPkr: existingCustomer.totalSpentPkr + parsed.data.totalPkr,
+        isRegular: existingCustomer.totalOrders + 1 >= 2,
+        lastOrderAt: new Date(),
+      })
+      .where(eq(customersTable.id, existingCustomer.id))
+      .returning())[0]
+    : (await db.insert(customersTable).values({
+        bakerId: parsed.data.bakerId,
+        name: parsed.data.buyerName.trim(),
+        whatsappNumber: phone,
+        preferredArea: parsed.data.buyerArea?.trim() || null,
+        totalOrders: 1,
+        totalSpentPkr: parsed.data.totalPkr,
+        isRegular: false,
+        lastOrderAt: new Date(),
+      }).returning())[0];
+
+  const [order] = await db.insert(ordersTable).values({
+    ...parsed.data,
+    buyerId: customer.id,
+    buyerWhatsapp: phone,
+  } as any).returning();
   
   // Auto-trigger OCR verification if a payment screenshot URL is provided on checkout
   if (parsed.data.paymentScreenshotUrl) {

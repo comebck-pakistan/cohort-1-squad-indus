@@ -10,6 +10,7 @@ export default function DashboardCustomers() {
     <DashboardLayout>
       <div className="p-8">
         <h1 className="text-4xl font-bold mb-8 font-serif text-primary">Customer CRM</h1>
+        <p className="mb-8 text-muted-foreground">Customers are created and updated from real marketplace orders. Repeat buyers are marked after their second order.</p>
         
         {isLoading ? (
           <div className="animate-pulse h-64 bg-muted rounded-xl w-full"></div>
@@ -22,7 +23,7 @@ export default function DashboardCustomers() {
                   <div key={customer.id} className="flex justify-between items-center border-b border-border pb-4 last:border-0 last:pb-0">
                     <div>
                       <p className="font-bold">{customer.name}</p>
-                      <p className="text-sm text-muted-foreground">{customer.whatsappNumber}</p>
+                      <p className="text-sm text-muted-foreground">{customer.whatsappNumber}{customer.preferredArea ? ` · ${customer.preferredArea}` : ""}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-mono font-bold text-primary">PKR {customer.totalSpentPkr.toLocaleString()}</p>

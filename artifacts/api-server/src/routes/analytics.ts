@@ -46,6 +46,16 @@ router.get("/analytics/baker/:bakerId/:period", async (req, res): Promise<void> 
     .slice(0, 5)
     .map(([name, stats]) => ({ name, ...stats }));
 
+  const deliveryAreaCounts: Record<string, number> = {};
+  for (const order of orders) {
+    const area = order.buyerArea?.trim();
+    if (area) deliveryAreaCounts[area] = (deliveryAreaCounts[area] ?? 0) + 1;
+  }
+  const topDeliveryAreas = Object.entries(deliveryAreaCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([area, orders]) => ({ area, orders }));
+
   // Unique buyers
   const buyerSet = new Set(orders.map((o) => o.buyerWhatsapp));
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -77,6 +87,7 @@ router.get("/analytics/baker/:bakerId/:period", async (req, res): Promise<void> 
     totalRevenue,
     avgOrderValue,
     topProducts,
+    topDeliveryAreas,
     newCustomers: newBuyers.size,
     repeatCustomers: repeatSet.size,
     cancellationAnalytics: {

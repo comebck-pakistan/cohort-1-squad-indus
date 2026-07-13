@@ -15,7 +15,7 @@ export default function BuyerLogin() {
       if (!active || !user || completed) return;
       completed = true;
       rememberGoogleUser(user, "buyer");
-      navigate("/bakers");
+      navigate("/");
     };
     getGoogleRedirectUser()
       .then(completeLogin)

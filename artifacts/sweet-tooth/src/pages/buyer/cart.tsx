@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { BuyerLayout } from "@/components/layout/buyer-layout";
 import {
@@ -27,6 +27,17 @@ export default function Cart() {
   const [textOnCake, setTextOnCake] = useState("");
   const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState("");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("sweet-tooth-google-user");
+    if (!storedUser) return;
+    try {
+      const user = JSON.parse(storedUser) as { name?: string | null };
+      if (user.name) setBuyerName(user.name);
+    } catch {
+      // A malformed browser profile should never block checkout.
+    }
+  }, []);
 
   const { data: cartItems, isLoading } = useGetCart(
     { buyerId },

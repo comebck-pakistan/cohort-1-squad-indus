@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 // Read API URL from environment variable, falling back to same-origin proxy
-const apiUrl = import.meta.env.VITE_API_URL || "";
+const apiUrl = import.meta.env.VITE_API_URL || "https://cohort-1-squad-indus-api-server-z3b.vercel.app";
 if (apiUrl) {
   setBaseUrl(apiUrl);
 }

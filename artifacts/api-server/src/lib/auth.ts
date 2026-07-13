@@ -1,26 +1,40 @@
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "sweet-tooth-default-secret-key-123456";
+const TOKEN_TTL_SECONDS = 60 * 60 * 12;
 
-export function signToken(payload: any): string {
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("JWT_SECRET must be set to a random value of at least 32 characters");
+  }
+  return secret;
+}
+
+export function signToken(payload: Record<string, unknown>): string {
   const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-  const payloadStr = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const now = Math.floor(Date.now() / 1000);
+  const payloadStr = Buffer.from(JSON.stringify({ ...payload, iat: now, exp: now + TOKEN_TTL_SECONDS })).toString("base64url");
   const signature = crypto
-    .createHmac("sha256", JWT_SECRET)
+    .createHmac("sha256", getJwtSecret())
     .update(`${header}.${payloadStr}`)
     .digest("base64url");
   return `${header}.${payloadStr}.${signature}`;
 }
 
-export function verifyToken(token: string): any {
+export function verifyToken(token: string): Record<string, unknown> | null {
   try {
     const [header, payload, signature] = token.split(".");
+    if (!header || !payload || !signature) return null;
     const expectedSig = crypto
-      .createHmac("sha256", JWT_SECRET)
+      .createHmac("sha256", getJwtSecret())
       .update(`${header}.${payload}`)
       .digest("base64url");
-    if (signature !== expectedSig) return null;
-    return JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSig);
+    if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Record<string, unknown>;
+    if (typeof decoded.exp !== "number" || decoded.exp <= Math.floor(Date.now() / 1000)) return null;
+    return decoded;
   } catch {
     return null;
   }

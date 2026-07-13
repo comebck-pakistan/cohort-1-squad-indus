@@ -14,11 +14,11 @@ export function requireBakerAuth(req: Request, res: Response, next: NextFunction
 
   const token = authHeader.split(" ")[1];
   const decoded = verifyToken(token);
-  if (!decoded || !decoded.bakerId) {
+  if (!decoded || typeof decoded.bakerId !== "number") {
     res.status(401).json({ error: "Invalid or expired token." });
     return;
   }
 
-  (req as any).bakerId = decoded.bakerId;
+  (req as AuthenticatedRequest).bakerId = decoded.bakerId;
   next();
 }

@@ -1,5 +1,5 @@
-import app from "./app";
-import { logger } from "./lib/logger";
+import app from "./app.js";
+import { logger } from "./lib/logger.js";
 
 if (!process.env.VERCEL) {
   const rawPort = process.env["PORT"] || "8080";
@@ -9,7 +9,7 @@ if (!process.env.VERCEL) {
     throw new Error(`Invalid PORT value: "${rawPort}"`);
   }
 
-  app.listen(port, (err) => {
+  app.listen(port, (err?: Error) => {
     if (err) {
       logger.error({ err }, "Error listening on port");
       process.exit(1);

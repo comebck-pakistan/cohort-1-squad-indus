@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
+import type { ComponentType } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +18,7 @@ import BakerProfile from "@/pages/buyer/baker-profile";
 import Cart from "@/pages/buyer/cart";
 import BuyerOrders from "@/pages/buyer/orders";
 import BuyerLogin from "@/pages/auth/buyer-login";
+import LoginChoice from "@/pages/auth/login-choice";
 
 // Dashboard Pages
 import DashboardHome from "@/pages/dashboard/home";
@@ -29,10 +31,16 @@ import DashboardCustomers from "@/pages/dashboard/customers";
 import DashboardCalendar from "@/pages/dashboard/calendar";
 import DashboardAgentHub from "@/pages/dashboard/agent-hub";
 import BakerLogin from "@/pages/auth/baker-login";
+import BakerRegister from "@/pages/auth/baker-register";
+import { getBakerSession } from "@/lib/baker-session";
 
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
+
+function ProtectedDashboard({ component: Component }: { component: ComponentType }) {
+  return getBakerSession() ? <Component /> : <BakerLogin />;
+}
 
 function Router() {
   return (
@@ -42,18 +50,20 @@ function Router() {
       <Route path="/bakers/:id" component={BakerProfile} />
       <Route path="/cart" component={Cart} />
       <Route path="/orders" component={BuyerOrders} />
-      <Route path="/login" component={BuyerLogin} />
+      <Route path="/login" component={LoginChoice} />
+      <Route path="/login/buyer" component={BuyerLogin} />
 
-      <Route path="/dashboard" component={DashboardHome} />
-      <Route path="/dashboard/orders" component={DashboardOrders} />
-      <Route path="/dashboard/catalog" component={DashboardCatalog} />
-      <Route path="/dashboard/analytics" component={DashboardAnalytics} />
-      <Route path="/dashboard/settings" component={DashboardSettings} />
-      <Route path="/dashboard/payments" component={DashboardPayments} />
-      <Route path="/dashboard/customers" component={DashboardCustomers} />
-      <Route path="/dashboard/calendar" component={DashboardCalendar} />
-      <Route path="/dashboard/agent-hub" component={DashboardAgentHub} />
+      <Route path="/dashboard" component={() => <ProtectedDashboard component={DashboardHome} />} />
+      <Route path="/dashboard/orders" component={() => <ProtectedDashboard component={DashboardOrders} />} />
+      <Route path="/dashboard/catalog" component={() => <ProtectedDashboard component={DashboardCatalog} />} />
+      <Route path="/dashboard/analytics" component={() => <ProtectedDashboard component={DashboardAnalytics} />} />
+      <Route path="/dashboard/settings" component={() => <ProtectedDashboard component={DashboardSettings} />} />
+      <Route path="/dashboard/payments" component={() => <ProtectedDashboard component={DashboardPayments} />} />
+      <Route path="/dashboard/customers" component={() => <ProtectedDashboard component={DashboardCustomers} />} />
+      <Route path="/dashboard/calendar" component={() => <ProtectedDashboard component={DashboardCalendar} />} />
+      <Route path="/dashboard/agent-hub" component={() => <ProtectedDashboard component={DashboardAgentHub} />} />
       <Route path="/dashboard/login" component={BakerLogin} />
+      <Route path="/dashboard/register" component={BakerRegister} />
 
       <Route component={NotFound} />
     </Switch>

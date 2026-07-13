@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { getBakerSession } from "@/lib/baker-session";
 
 export function useBuyerSession() {
   const [buyerId, setBuyerId] = useState<number>(1);
-  const [bakerId, setBakerId] = useState<number>(1);
+  const [bakerId, setBakerId] = useState<number>(() => getBakerSession()?.bakerId ?? 0);
 
   useEffect(() => {
     const storedBuyerId = localStorage.getItem("buyerId");
@@ -12,12 +13,7 @@ export function useBuyerSession() {
       localStorage.setItem("buyerId", "1");
     }
 
-    const storedBakerId = localStorage.getItem("bakerId");
-    if (storedBakerId) {
-      setBakerId(parseInt(storedBakerId, 10));
-    } else {
-      localStorage.setItem("bakerId", "1");
-    }
+    setBakerId(getBakerSession()?.bakerId ?? 0);
   }, []);
 
   return { buyerId, bakerId };

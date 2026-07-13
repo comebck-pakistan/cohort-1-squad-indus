@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useGetBaker } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
 import { forgetGoogleUser, signOutGoogle } from "@/lib/firebase-auth";
+import { clearBakerSession } from "@/lib/baker-session";
 import { NotificationBell } from "@/components/notification-bell";
 import {
   LayoutDashboard, ShoppingBag, Grid, DollarSign,
@@ -33,7 +34,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       await signOutGoogle();
     } finally {
       forgetGoogleUser();
-      localStorage.removeItem("bakerId");
+      clearBakerSession();
       navigate("/dashboard/login");
       setIsLoggingOut(false);
     }

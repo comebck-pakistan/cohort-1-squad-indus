@@ -59678,7 +59678,270 @@ router15.use(whatsapp_default);
 var routes_default = router15;
 
 // artifacts/api-server/src/bootstrap-schema.sql
-var bootstrap_schema_default = "CREATE SCHEMA IF NOT EXISTS sweet_tooth;\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.bakers (\r\n  id SERIAL PRIMARY KEY,\r\n  business_name TEXT NOT NULL,\r\n  owner_name TEXT NOT NULL DEFAULT '',\r\n  tagline TEXT,\r\n  bio TEXT,\r\n  city TEXT NOT NULL,\r\n  area TEXT,\n  whatsapp_number TEXT NOT NULL UNIQUE,\n  email TEXT UNIQUE,\n  password_hash TEXT,\n  require_advance BOOLEAN NOT NULL DEFAULT false,\n  advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000,\n  advance_percentage INTEGER NOT NULL DEFAULT 50,\n  payment_details TEXT NOT NULL DEFAULT '',\n  delivery_areas TEXT[] NOT NULL DEFAULT '{}',\n  cod_policy TEXT,\r\n  return_policy TEXT,\r\n  max_orders_per_day INTEGER NOT NULL DEFAULT 10,\r\n  agent_active BOOLEAN NOT NULL DEFAULT true,\r\n  agent_config JSONB DEFAULT '{}',\r\n  whatsapp_agent_enabled BOOLEAN NOT NULL DEFAULT false,\r\n  instagram_agent_enabled BOOLEAN NOT NULL DEFAULT false,\r\n  meta_webhook_token TEXT,\r\n  instagram_page_id TEXT,\r\n  marketplace_visible BOOLEAN NOT NULL DEFAULT true,\r\n  subscription_plan TEXT NOT NULL DEFAULT 'free',\r\n  rating_avg REAL NOT NULL DEFAULT 0,\r\n  total_orders INTEGER NOT NULL DEFAULT 0,\r\n  slug TEXT NOT NULL UNIQUE,\r\n  photo_url TEXT,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.products (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  name TEXT NOT NULL,\r\n  description TEXT,\r\n  base_price_pkr INTEGER NOT NULL,\r\n  sizes JSONB NOT NULL DEFAULT '[]',\r\n  variants TEXT[] NOT NULL DEFAULT '{}',\r\n  is_eggless_available BOOLEAN NOT NULL DEFAULT false,\r\n  is_available BOOLEAN NOT NULL DEFAULT true,\r\n  lead_time_days INTEGER NOT NULL DEFAULT 1,\r\n  category TEXT NOT NULL,\r\n  occasion_tags TEXT[] NOT NULL DEFAULT '{}',\r\n  dietary_tags TEXT[] NOT NULL DEFAULT '{}',\r\n  photo_url TEXT,\r\n  total_orders INTEGER NOT NULL DEFAULT 0,\r\n  is_best_seller BOOLEAN NOT NULL DEFAULT false,\r\n  is_top_rated BOOLEAN NOT NULL DEFAULT false,\r\n  display_order INTEGER NOT NULL DEFAULT 0,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.orders (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  buyer_id INTEGER,\r\n  buyer_name TEXT NOT NULL,\r\n  buyer_whatsapp TEXT NOT NULL,\r\n  buyer_address TEXT NOT NULL,\r\n  buyer_area TEXT,\r\n  items JSONB NOT NULL DEFAULT '[]',\r\n  total_pkr INTEGER NOT NULL,\r\n  delivery_date DATE,\r\n  status TEXT NOT NULL DEFAULT 'new',\r\n  payment_status TEXT NOT NULL DEFAULT 'pending',\r\n  payment_amount_received INTEGER,\r\n  source TEXT NOT NULL DEFAULT 'marketplace',\r\n  occasion TEXT,\n  special_instructions TEXT,\n  flavour TEXT,\n  text_on_cake TEXT,\n  payment_screenshot_url TEXT,\n  advance_paid BOOLEAN NOT NULL DEFAULT false,\n  require_advance BOOLEAN NOT NULL DEFAULT false,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.cart_items (\r\n  id SERIAL PRIMARY KEY,\r\n  buyer_id INTEGER NOT NULL,\r\n  baker_id INTEGER NOT NULL,\r\n  product_id INTEGER NOT NULL,\r\n  product_name TEXT NOT NULL,\r\n  size_label TEXT NOT NULL,\r\n  variant TEXT,\r\n  quantity INTEGER NOT NULL DEFAULT 1,\r\n  unit_price_pkr INTEGER NOT NULL,\r\n  photo_url TEXT,\r\n  added_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.customers (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  name TEXT NOT NULL,\r\n  whatsapp_number TEXT NOT NULL,\r\n  city TEXT,\r\n  preferred_area TEXT,\r\n  total_orders INTEGER NOT NULL DEFAULT 0,\r\n  total_spent_pkr INTEGER NOT NULL DEFAULT 0,\r\n  is_regular BOOLEAN NOT NULL DEFAULT false,\r\n  is_at_risk BOOLEAN NOT NULL DEFAULT false,\r\n  last_order_at TIMESTAMPTZ,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.chat_messages (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  buyer_id INTEGER,\r\n  session_id TEXT NOT NULL,\r\n  role TEXT NOT NULL,\r\n  content TEXT NOT NULL,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.conversation_memory (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  buyer_id INTEGER NOT NULL,\r\n  buyer_name TEXT,\r\n  preferences JSONB DEFAULT '{}',\r\n  message_count INTEGER NOT NULL DEFAULT 0,\r\n  summary TEXT,\r\n  last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  UNIQUE (baker_id, buyer_id)\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.notifications (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  type TEXT NOT NULL,\r\n  title TEXT NOT NULL,\r\n  message TEXT NOT NULL,\r\n  related_id INTEGER,\r\n  related_type TEXT,\r\n  is_read BOOLEAN NOT NULL DEFAULT false,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.reviews (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  buyer_id INTEGER,\r\n  order_id INTEGER,\r\n  buyer_name TEXT NOT NULL,\r\n  rating INTEGER NOT NULL,\r\n  rating_product INTEGER,\r\n  rating_packaging INTEGER,\r\n  review_text TEXT,\r\n  product_name TEXT,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.knowledge_chunks (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  source_type TEXT NOT NULL,\r\n  source_id INTEGER,\r\n  chunk_index INTEGER NOT NULL DEFAULT 0,\r\n  content TEXT NOT NULL,\r\n  embedding JSONB NOT NULL,\r\n  metadata JSONB DEFAULT '{}',\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.baker_goals (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  label TEXT NOT NULL,\r\n  metric TEXT NOT NULL DEFAULT 'orders',\r\n  target_value INTEGER NOT NULL,\r\n  period TEXT NOT NULL DEFAULT 'monthly',\r\n  achieved_at TIMESTAMPTZ,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.baker_notes (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  content TEXT NOT NULL,\r\n  pinned BOOLEAN NOT NULL DEFAULT false,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE TABLE IF NOT EXISTS sweet_tooth.baker_reminders (\r\n  id SERIAL PRIMARY KEY,\r\n  baker_id INTEGER NOT NULL,\r\n  title TEXT NOT NULL,\r\n  due_at TIMESTAMPTZ NOT NULL,\r\n  done BOOLEAN NOT NULL DEFAULT false,\r\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r\n);\r\n\r\nCREATE INDEX IF NOT EXISTS knowledge_chunks_baker_idx ON sweet_tooth.knowledge_chunks (baker_id);\r\nCREATE INDEX IF NOT EXISTS baker_goals_baker_idx ON sweet_tooth.baker_goals (baker_id);\r\nCREATE INDEX IF NOT EXISTS baker_notes_baker_idx ON sweet_tooth.baker_notes (baker_id);\r\nCREATE INDEX IF NOT EXISTS baker_reminders_baker_idx ON sweet_tooth.baker_reminders (baker_id);\r\n\r\nALTER TABLE sweet_tooth.customers ADD COLUMN IF NOT EXISTS is_at_risk BOOLEAN NOT NULL DEFAULT false;\nALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;\nALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS password_hash TEXT;\nALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS require_advance BOOLEAN NOT NULL DEFAULT false;\nALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000;\nALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_percentage INTEGER NOT NULL DEFAULT 50;\nALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS payment_details TEXT NOT NULL DEFAULT '';\nALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS flavour TEXT;\nALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS text_on_cake TEXT;\nALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;\nALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS advance_paid BOOLEAN NOT NULL DEFAULT false;\nALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS require_advance BOOLEAN NOT NULL DEFAULT false;\nALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS order_id INTEGER;\r\nALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_product INTEGER;\r\nALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_packaging INTEGER;\r\nALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS review_text TEXT;\r\nALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS product_name TEXT;\r\n";
+var bootstrap_schema_default = `CREATE SCHEMA IF NOT EXISTS sweet_tooth;\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.bakers (\r
+  id SERIAL PRIMARY KEY,\r
+  business_name TEXT NOT NULL,\r
+  owner_name TEXT NOT NULL DEFAULT '',\r
+  tagline TEXT,\r
+  bio TEXT,\r
+  city TEXT NOT NULL,\r
+  area TEXT,
+  whatsapp_number TEXT NOT NULL UNIQUE,
+  email TEXT UNIQUE,
+  password_hash TEXT,
+  require_advance BOOLEAN NOT NULL DEFAULT false,
+  advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000,
+  advance_percentage INTEGER NOT NULL DEFAULT 50,
+  payment_details TEXT NOT NULL DEFAULT '',
+  delivery_areas TEXT[] NOT NULL DEFAULT '{}',
+  cod_policy TEXT,\r
+  return_policy TEXT,\r
+  max_orders_per_day INTEGER NOT NULL DEFAULT 10,\r
+  agent_active BOOLEAN NOT NULL DEFAULT true,\r
+  agent_config JSONB DEFAULT '{}',\r
+  whatsapp_agent_enabled BOOLEAN NOT NULL DEFAULT false,\r
+  instagram_agent_enabled BOOLEAN NOT NULL DEFAULT false,\r
+  meta_webhook_token TEXT,\r
+  instagram_page_id TEXT,\r
+  marketplace_visible BOOLEAN NOT NULL DEFAULT true,\r
+  subscription_plan TEXT NOT NULL DEFAULT 'free',\r
+  rating_avg REAL NOT NULL DEFAULT 0,\r
+  total_orders INTEGER NOT NULL DEFAULT 0,\r
+  slug TEXT NOT NULL UNIQUE,\r
+  photo_url TEXT,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.products (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  name TEXT NOT NULL,\r
+  description TEXT,\r
+  base_price_pkr INTEGER NOT NULL,\r
+  sizes JSONB NOT NULL DEFAULT '[]',\r
+  variants TEXT[] NOT NULL DEFAULT '{}',\r
+  is_eggless_available BOOLEAN NOT NULL DEFAULT false,\r
+  is_available BOOLEAN NOT NULL DEFAULT true,\r
+  lead_time_days INTEGER NOT NULL DEFAULT 1,\r
+  category TEXT NOT NULL,\r
+  occasion_tags TEXT[] NOT NULL DEFAULT '{}',\r
+  dietary_tags TEXT[] NOT NULL DEFAULT '{}',\r
+  photo_url TEXT,\r
+  total_orders INTEGER NOT NULL DEFAULT 0,\r
+  is_best_seller BOOLEAN NOT NULL DEFAULT false,\r
+  is_top_rated BOOLEAN NOT NULL DEFAULT false,\r
+  display_order INTEGER NOT NULL DEFAULT 0,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.orders (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  buyer_id INTEGER,\r
+  buyer_name TEXT NOT NULL,\r
+  buyer_whatsapp TEXT NOT NULL,\r
+  buyer_address TEXT NOT NULL,\r
+  buyer_area TEXT,\r
+  items JSONB NOT NULL DEFAULT '[]',\r
+  total_pkr INTEGER NOT NULL,\r
+  delivery_date DATE,\r
+  status TEXT NOT NULL DEFAULT 'new',\r
+  payment_status TEXT NOT NULL DEFAULT 'pending',\r
+  payment_amount_received INTEGER,\r
+  source TEXT NOT NULL DEFAULT 'marketplace',\r
+  occasion TEXT,
+  special_instructions TEXT,
+  flavour TEXT,
+  text_on_cake TEXT,
+  payment_screenshot_url TEXT,
+  advance_paid BOOLEAN NOT NULL DEFAULT false,
+  require_advance BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.cart_items (\r
+  id SERIAL PRIMARY KEY,\r
+  buyer_id INTEGER NOT NULL,\r
+  baker_id INTEGER NOT NULL,\r
+  product_id INTEGER NOT NULL,\r
+  product_name TEXT NOT NULL,\r
+  size_label TEXT NOT NULL,\r
+  variant TEXT,\r
+  quantity INTEGER NOT NULL DEFAULT 1,\r
+  unit_price_pkr INTEGER NOT NULL,\r
+  photo_url TEXT,\r
+  added_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.customers (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  name TEXT NOT NULL,\r
+  whatsapp_number TEXT NOT NULL,\r
+  city TEXT,\r
+  preferred_area TEXT,\r
+  total_orders INTEGER NOT NULL DEFAULT 0,\r
+  total_spent_pkr INTEGER NOT NULL DEFAULT 0,\r
+  is_regular BOOLEAN NOT NULL DEFAULT false,\r
+  is_at_risk BOOLEAN NOT NULL DEFAULT false,\r
+  last_order_at TIMESTAMPTZ,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.chat_messages (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  buyer_id INTEGER,\r
+  session_id TEXT NOT NULL,\r
+  role TEXT NOT NULL,\r
+  content TEXT NOT NULL,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.conversation_memory (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  buyer_id INTEGER NOT NULL,\r
+  buyer_name TEXT,\r
+  preferences JSONB DEFAULT '{}',\r
+  message_count INTEGER NOT NULL DEFAULT 0,\r
+  summary TEXT,\r
+  last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  UNIQUE (baker_id, buyer_id)\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.notifications (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  type TEXT NOT NULL,\r
+  title TEXT NOT NULL,\r
+  message TEXT NOT NULL,\r
+  related_id INTEGER,\r
+  related_type TEXT,\r
+  is_read BOOLEAN NOT NULL DEFAULT false,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.reviews (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  buyer_id INTEGER,\r
+  order_id INTEGER,\r
+  buyer_name TEXT NOT NULL,\r
+  rating INTEGER NOT NULL,\r
+  rating_product INTEGER,\r
+  rating_packaging INTEGER,\r
+  review_text TEXT,\r
+  product_name TEXT,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.knowledge_chunks (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  source_type TEXT NOT NULL,\r
+  source_id INTEGER,\r
+  chunk_index INTEGER NOT NULL DEFAULT 0,\r
+  content TEXT NOT NULL,\r
+  embedding JSONB NOT NULL,\r
+  metadata JSONB DEFAULT '{}',\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.baker_goals (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  label TEXT NOT NULL,\r
+  metric TEXT NOT NULL DEFAULT 'orders',\r
+  target_value INTEGER NOT NULL,\r
+  period TEXT NOT NULL DEFAULT 'monthly',\r
+  achieved_at TIMESTAMPTZ,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.baker_notes (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  content TEXT NOT NULL,\r
+  pinned BOOLEAN NOT NULL DEFAULT false,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\r
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE TABLE IF NOT EXISTS sweet_tooth.baker_reminders (\r
+  id SERIAL PRIMARY KEY,\r
+  baker_id INTEGER NOT NULL,\r
+  title TEXT NOT NULL,\r
+  due_at TIMESTAMPTZ NOT NULL,\r
+  done BOOLEAN NOT NULL DEFAULT false,\r
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\r
+);\r
+\r
+CREATE INDEX IF NOT EXISTS knowledge_chunks_baker_idx ON sweet_tooth.knowledge_chunks (baker_id);\r
+CREATE INDEX IF NOT EXISTS baker_goals_baker_idx ON sweet_tooth.baker_goals (baker_id);\r
+CREATE INDEX IF NOT EXISTS baker_notes_baker_idx ON sweet_tooth.baker_notes (baker_id);\r
+CREATE INDEX IF NOT EXISTS baker_reminders_baker_idx ON sweet_tooth.baker_reminders (baker_id);\r
+\r
+ALTER TABLE sweet_tooth.customers ADD COLUMN IF NOT EXISTS is_at_risk BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS require_advance BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_percentage INTEGER NOT NULL DEFAULT 50;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS payment_details TEXT NOT NULL DEFAULT '';
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS flavour TEXT;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS text_on_cake TEXT;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS advance_paid BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS require_advance BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS order_id INTEGER;
+ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_product INTEGER;\r
+ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_packaging INTEGER;\r
+ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS review_text TEXT;\r
+ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS product_name TEXT;
+
+-- A new linked Neon database starts empty. These idempotent demo records keep
+-- the marketplace usable immediately while real bakers add their own catalogues.
+INSERT INTO sweet_tooth.bakers (
+  business_name, owner_name, tagline, city, area, whatsapp_number, email,
+  password_hash, delivery_areas, marketplace_visible, subscription_plan,
+  rating_avg, total_orders, slug, photo_url
+) VALUES
+  ('Sana''s Sweet Studio', 'Sana Malik', 'Ghar ka meetha, dil se banaya', 'Lahore', 'Gulberg', '+923001234567', 'sana@studio.com', 'demo-only', ARRAY['Gulberg','Model Town','DHA'], true, 'pro', 4.9, 247, 'sana-sweet-studio', 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop'),
+  ('Fatima''s Cakery', 'Fatima Zahra', 'Every bite tells a story', 'Karachi', 'Clifton', '+923219876543', 'fatima@cakery.com', 'demo-only', ARRAY['Clifton','Defence'], true, 'pro', 4.8, 189, 'fatima-cakery', 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=800&auto=format&fit=crop'),
+  ('Amna Bakes', 'Amna Sheikh', 'Simple ingredients, extraordinary taste', 'Islamabad', 'F-7', '+923115554321', 'amna@bakes.com', 'demo-only', ARRAY['F-7','F-8','G-9'], true, 'free', 4.7, 94, 'amna-bakes', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop')
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO sweet_tooth.products (
+  baker_id, name, description, base_price_pkr, sizes, variants,
+  is_eggless_available, is_available, lead_time_days, category,
+  occasion_tags, dietary_tags, photo_url, total_orders, is_best_seller,
+  is_top_rated, display_order
+)
+SELECT b.id, p.name, p.description, p.base_price_pkr, p.sizes::jsonb,
+  p.variants::text[], p.is_eggless_available, true, p.lead_time_days,
+  p.category, p.occasion_tags::text[], p.dietary_tags::text[], p.photo_url,
+  p.total_orders, p.is_best_seller, p.is_top_rated, p.display_order
+FROM (VALUES
+  ('sana-sweet-studio', 'Classic Black Forest Cake', 'Moist chocolate sponge, fresh cream, and cherries.', 2800, '[{"label":"Half Kg","pricePkr":2800},{"label":"1 Kg","pricePkr":5200}]', '{}', true, 1, 'Cakes', '{Birthday,Anniversary}', '{}', 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=600&auto=format&fit=crop', 89, true, true, 1),
+  ('sana-sweet-studio', 'Red Velvet Cupcakes', 'Velvety cupcakes with cream-cheese frosting.', 1200, '[{"label":"Box of 6","pricePkr":1200},{"label":"Box of 12","pricePkr":2200}]', '{}', false, 1, 'Cupcakes', '{Birthday,Party}', '{}', 'https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=600&auto=format&fit=crop', 134, true, false, 2),
+  ('fatima-cakery', 'Fondant Wedding Cake', 'Elegant custom wedding cakes with sugar flowers.', 15000, '[{"label":"2 Tier","pricePkr":15000}]', '{}', true, 7, 'Wedding Cakes', '{Wedding,Nikah}', '{}', 'https://images.unsplash.com/photo-1549298651-0e5b3a0e9ca3?w=600&auto=format&fit=crop', 34, true, true, 1),
+  ('amna-bakes', 'Chocolate Chip Cookies', 'Crispy edges and chewy centres.', 700, '[{"label":"Box of 12","pricePkr":700}]', '{}', false, 1, 'Cookies', '{Casual,Gift}', '{}', 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=600&auto=format&fit=crop', 156, true, true, 1)
+) AS p(slug, name, description, base_price_pkr, sizes, variants, is_eggless_available, lead_time_days, category, occasion_tags, dietary_tags, photo_url, total_orders, is_best_seller, is_top_rated, display_order)
+JOIN sweet_tooth.bakers b ON b.slug = p.slug
+WHERE NOT EXISTS (
+  SELECT 1 FROM sweet_tooth.products existing
+  WHERE existing.baker_id = b.id AND existing.name = p.name
+);
+`;
 
 // artifacts/api-server/src/bootstrap-db.ts
 var bootstrapPromise;

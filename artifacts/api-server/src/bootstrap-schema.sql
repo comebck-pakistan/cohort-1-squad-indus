@@ -227,3 +227,37 @@ ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_product INTEGER;
 ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS rating_packaging INTEGER;
 ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS review_text TEXT;
 ALTER TABLE sweet_tooth.reviews ADD COLUMN IF NOT EXISTS product_name TEXT;
+
+-- A new linked Neon database starts empty. These idempotent demo records keep
+-- the marketplace usable immediately while real bakers add their own catalogues.
+INSERT INTO sweet_tooth.bakers (
+  business_name, owner_name, tagline, city, area, whatsapp_number, email,
+  password_hash, delivery_areas, marketplace_visible, subscription_plan,
+  rating_avg, total_orders, slug, photo_url
+) VALUES
+  ('Sana''s Sweet Studio', 'Sana Malik', 'Ghar ka meetha, dil se banaya', 'Lahore', 'Gulberg', '+923001234567', 'sana@studio.com', 'demo-only', ARRAY['Gulberg','Model Town','DHA'], true, 'pro', 4.9, 247, 'sana-sweet-studio', 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&auto=format&fit=crop'),
+  ('Fatima''s Cakery', 'Fatima Zahra', 'Every bite tells a story', 'Karachi', 'Clifton', '+923219876543', 'fatima@cakery.com', 'demo-only', ARRAY['Clifton','Defence'], true, 'pro', 4.8, 189, 'fatima-cakery', 'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=800&auto=format&fit=crop'),
+  ('Amna Bakes', 'Amna Sheikh', 'Simple ingredients, extraordinary taste', 'Islamabad', 'F-7', '+923115554321', 'amna@bakes.com', 'demo-only', ARRAY['F-7','F-8','G-9'], true, 'free', 4.7, 94, 'amna-bakes', 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop')
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO sweet_tooth.products (
+  baker_id, name, description, base_price_pkr, sizes, variants,
+  is_eggless_available, is_available, lead_time_days, category,
+  occasion_tags, dietary_tags, photo_url, total_orders, is_best_seller,
+  is_top_rated, display_order
+)
+SELECT b.id, p.name, p.description, p.base_price_pkr, p.sizes::jsonb,
+  p.variants::text[], p.is_eggless_available, true, p.lead_time_days,
+  p.category, p.occasion_tags::text[], p.dietary_tags::text[], p.photo_url,
+  p.total_orders, p.is_best_seller, p.is_top_rated, p.display_order
+FROM (VALUES
+  ('sana-sweet-studio', 'Classic Black Forest Cake', 'Moist chocolate sponge, fresh cream, and cherries.', 2800, '[{"label":"Half Kg","pricePkr":2800},{"label":"1 Kg","pricePkr":5200}]', '{}', true, 1, 'Cakes', '{Birthday,Anniversary}', '{}', 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=600&auto=format&fit=crop', 89, true, true, 1),
+  ('sana-sweet-studio', 'Red Velvet Cupcakes', 'Velvety cupcakes with cream-cheese frosting.', 1200, '[{"label":"Box of 6","pricePkr":1200},{"label":"Box of 12","pricePkr":2200}]', '{}', false, 1, 'Cupcakes', '{Birthday,Party}', '{}', 'https://images.unsplash.com/photo-1614707267537-b85aaf00c4b7?w=600&auto=format&fit=crop', 134, true, false, 2),
+  ('fatima-cakery', 'Fondant Wedding Cake', 'Elegant custom wedding cakes with sugar flowers.', 15000, '[{"label":"2 Tier","pricePkr":15000}]', '{}', true, 7, 'Wedding Cakes', '{Wedding,Nikah}', '{}', 'https://images.unsplash.com/photo-1549298651-0e5b3a0e9ca3?w=600&auto=format&fit=crop', 34, true, true, 1),
+  ('amna-bakes', 'Chocolate Chip Cookies', 'Crispy edges and chewy centres.', 700, '[{"label":"Box of 12","pricePkr":700}]', '{}', false, 1, 'Cookies', '{Casual,Gift}', '{}', 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=600&auto=format&fit=crop', 156, true, true, 1)
+) AS p(slug, name, description, base_price_pkr, sizes, variants, is_eggless_available, lead_time_days, category, occasion_tags, dietary_tags, photo_url, total_orders, is_best_seller, is_top_rated, display_order)
+JOIN sweet_tooth.bakers b ON b.slug = p.slug
+WHERE NOT EXISTS (
+  SELECT 1 FROM sweet_tooth.products existing
+  WHERE existing.baker_id = b.id AND existing.name = p.name
+);

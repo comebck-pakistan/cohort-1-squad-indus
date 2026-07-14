@@ -58568,52 +58568,35 @@ var import_express5 = __toESM(require_express2(), 1);
 // src/lib/ocr.ts
 async function performReceiptOCR(imageUrl) {
   const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
-  if (apiKey) {
-    try {
-      const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: { source: { imageUri: imageUrl } },
-              features: [{ type: "TEXT_DETECTION" }]
-            }
-          ]
-        })
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const fullText = data.responses?.[0]?.fullTextAnnotation?.text;
-        if (fullText) {
-          return fullText;
+  if (!apiKey) {
+    throw new Error("Receipt reading is not configured. Add GOOGLE_CLOUD_VISION_API_KEY to enable it.");
+  }
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(imageUrl);
+  } catch {
+    throw new Error("Receipt reading needs a public HTTPS image link. A transaction ID can still be reviewed manually.");
+  }
+  if (parsedUrl.protocol !== "https:") {
+    throw new Error("Receipt image links must use HTTPS.");
+  }
+  const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [
+        {
+          image: { source: { imageUri: imageUrl } },
+          features: [{ type: "TEXT_DETECTION" }]
         }
-      }
-    } catch (error40) {
-      console.error("GCP Vision OCR failed, falling back to simulated extraction:", error40);
-    }
-  }
-  const lowercaseUrl = imageUrl.toLowerCase();
-  if (lowercaseUrl.includes("easypaisa") || lowercaseUrl.includes("receipt") || lowercaseUrl.includes("proof")) {
-    return `
-      --- TRANSACTION SUCCESSFUL ---
-      Amount: PKR 2,500.00
-      Sent To: Sana Malik
-      Account: 03001234567
-      Channel: Easypaisa Mobile Account
-      Transaction ID: EP-987251403
-      Date: 2026-07-09 16:30:12
-      Status: Completed
-    `;
-  }
-  return `
-    HBL Mobile Banking Transfer
-    Transfer Successful
-    To Account: 012345678910 (Sana's Studio)
-    Amount: 1,500.00 PKR
-    Reference: Cake Deposit Order
-    Ref ID: HBL-TRX-55102
-  `;
+      ]
+    })
+  });
+  if (!response.ok) throw new Error("Receipt reading service could not read this image.");
+  const data = await response.json();
+  const fullText = data.responses?.[0]?.fullTextAnnotation?.text;
+  if (!fullText) throw new Error("No readable receipt text was found in this image.");
+  return fullText;
 }
 function verifyReceiptText(rawText, expectedTotal, advancePercentage, bakerWhatsapp, bakerBusinessName) {
   const text2 = rawText.toLowerCase();
@@ -58657,9 +58640,9 @@ function verifyReceiptText(rawText, expectedTotal, advancePercentage, bakerWhats
   const verified = confidence >= 80;
   let message = "";
   if (verified) {
-    message = `Payment successfully auto-verified via OCR. Matched amount (PKR ${extractedAmount}) and recipient account.`;
+    message = `Receipt details appear to match (PKR ${extractedAmount}), but a baker must manually confirm the transfer.`;
   } else {
-    message = `Verification failed. Extracted amount: PKR ${extractedAmount} (Expected at least PKR ${expectedDeposit}). Recipient account match: ${matchesAccount ? "YES" : "NO"}.`;
+    message = `Receipt details need manual review. Extracted amount: PKR ${extractedAmount} (expected at least PKR ${expectedDeposit}). Recipient account match: ${matchesAccount ? "YES" : "NO"}.`;
   }
   return {
     verified,
@@ -58687,15 +58670,7 @@ async function triggerPaymentOCRVerification(orderId) {
     baker.whatsappNumber,
     baker.businessName
   );
-  if (result.verified) {
-    await db.update(ordersTable).set({
-      advancePaid: true,
-      paymentStatus: "paid",
-      // or partial
-      paymentAmountReceived: result.extractedAmount
-    }).where(eq(ordersTable.id, orderId));
-  }
-  console.log(`[OCR Verification] Order #${orderId}: ${result.message}`);
+  console.log(`[Receipt review] Order #${orderId}: ${result.message}`);
   return result;
 }
 
@@ -58782,11 +58757,16 @@ router5.post("/orders", async (req, res) => {
     items: trustedItems,
     totalPkr: trustedTotalPkr,
     buyerId: customer.id,
-    buyerWhatsapp: phone
+    buyerWhatsapp: phone,
+    // A buyer-submitted receipt is evidence only. Only the authenticated baker
+    // can confirm payment through PATCH /orders/:orderId/payment.
+    advancePaid: false,
+    paymentStatus: "pending",
+    paymentAmountReceived: null
   }).returning();
-  if (parsed.data.paymentScreenshotUrl) {
+  if (/^https:\/\//i.test(parsed.data.paymentScreenshotUrl ?? "")) {
     triggerPaymentOCRVerification(order.id).catch(
-      (err) => console.error("Auto-OCR payment verification failed asynchronously:", err)
+      (err) => console.error("Receipt review could not run asynchronously:", err)
     );
   }
   res.status(201).json(formatOrder(order));
@@ -58865,7 +58845,7 @@ router5.patch("/orders/:orderId/payment", requireBakerAuth, async (req, res) => 
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [order] = await db.update(ordersTable).set({ paymentStatus: "paid", paymentAmountReceived: parsed.data.amountReceived }).where(and(eq(ordersTable.id, params.data.orderId), eq(ordersTable.bakerId, req.bakerId))).returning();
+  const [order] = await db.update(ordersTable).set({ paymentStatus: "paid", advancePaid: true, paymentAmountReceived: parsed.data.amountReceived }).where(and(eq(ordersTable.id, params.data.orderId), eq(ordersTable.bakerId, req.bakerId))).returning();
   if (!order) {
     res.status(404).json({ error: "Order not found" });
     return;
@@ -59348,14 +59328,14 @@ async function generateAgentReply(bakerId, buyerId, message, memory) {
           };
         } else if (latestOrder.paymentScreenshotUrl) {
           return {
-            reply: `We've received your transfer receipt / transaction ID for Order #${latestOrder.id}. Our auto-OCR verification system is currently matching it with the baker's preferred Easypaisa/Bank details. We will notify you the second it's fully confirmed!`,
+            reply: `We've received the transfer receipt or transaction reference for Order #${latestOrder.id}. The agent can extract helpful details from a receipt image, but payment stays pending until ${baker.businessName} manually confirms the transfer.`,
             action: null,
             cartItemId: null,
             escalated: false
           };
         } else {
           return {
-            reply: `Your Order #${latestOrder.id} is currently pending confirmation. Since the total is PKR ${latestOrder.totalPkr.toLocaleString()}, a 50% advance deposit (PKR ${(latestOrder.totalPkr * 0.5).toLocaleString()}) is required. Please transfer to the baker's Easypaisa (0300-1234567) or Bank account and upload your receipt screenshot/TID to confirm!`,
+            reply: `Your Order #${latestOrder.id} is currently pending confirmation. Since the total is PKR ${latestOrder.totalPkr.toLocaleString()}, a 50% advance deposit (PKR ${(latestOrder.totalPkr * 0.5).toLocaleString()}) is required. Please transfer using the payment details shared by ${baker.businessName}, then send a receipt screenshot or transaction ID. The baker will manually confirm it.`,
             action: null,
             cartItemId: null,
             escalated: false

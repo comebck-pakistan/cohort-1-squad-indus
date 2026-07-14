@@ -210,14 +210,14 @@ export async function generateAgentReply(
           };
         } else if (latestOrder.paymentScreenshotUrl) {
           return {
-            reply: `We've received your transfer receipt / transaction ID for Order #${latestOrder.id}. Our auto-OCR verification system is currently matching it with the baker's preferred Easypaisa/Bank details. We will notify you the second it's fully confirmed!`,
+            reply: `We've received the transfer receipt or transaction reference for Order #${latestOrder.id}. The agent can extract helpful details from a receipt image, but payment stays pending until ${baker.businessName} manually confirms the transfer.`,
             action: null,
             cartItemId: null,
             escalated: false,
           };
         } else {
           return {
-            reply: `Your Order #${latestOrder.id} is currently pending confirmation. Since the total is PKR ${latestOrder.totalPkr.toLocaleString()}, a 50% advance deposit (PKR ${(latestOrder.totalPkr * 0.5).toLocaleString()}) is required. Please transfer to the baker's Easypaisa (0300-1234567) or Bank account and upload your receipt screenshot/TID to confirm!`,
+            reply: `Your Order #${latestOrder.id} is currently pending confirmation. Since the total is PKR ${latestOrder.totalPkr.toLocaleString()}, a 50% advance deposit (PKR ${(latestOrder.totalPkr * 0.5).toLocaleString()}) is required. Please transfer using the payment details shared by ${baker.businessName}, then send a receipt screenshot or transaction ID. The baker will manually confirm it.`,
             action: null,
             cartItemId: null,
             escalated: false,

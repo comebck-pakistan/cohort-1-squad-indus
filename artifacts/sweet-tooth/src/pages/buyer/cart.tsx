@@ -102,7 +102,8 @@ export default function Cart() {
         textOnCake: textOnCake.trim() || undefined,
         paymentScreenshotUrl: paymentScreenshotUrl.trim() || undefined,
         requireAdvance,
-        advancePaid: requireAdvance ? !!paymentScreenshotUrl.trim() : false,
+        // Evidence is never proof of payment. The baker confirms payment after review.
+        advancePaid: false,
         items: cartItems.map((item) => ({
           productId: item.productId,
           productName: item.productName,
@@ -274,9 +275,12 @@ export default function Cart() {
                 <input
                   value={paymentScreenshotUrl}
                   onChange={(e) => setPaymentScreenshotUrl(e.target.value)}
-                  placeholder="Enter Transaction ID or Receipt Image Link"
+                  placeholder="Transaction ID or public HTTPS receipt image link"
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-card focus:ring-1 focus:ring-primary focus:outline-none font-mono"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Your payment is not confirmed automatically. A receipt image can be read to help the baker review it, but only the baker can mark the payment as received.
+                </p>
               </div>
             )}
 

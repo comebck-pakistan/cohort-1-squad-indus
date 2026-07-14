@@ -11,66 +11,46 @@ interface OCRVerificationResult {
 }
 
 /**
- * Perform OCR using Google Cloud Vision API (REST fetch) with a fallback to regex-based simulation
- * for sandbox/local testing environments.
+ * Extract text from a publicly accessible receipt image using Google Cloud Vision.
+ *
+ * This function intentionally has no mock receipt fallback. Payment evidence must
+ * never be fabricated or treated as proof that a transfer happened.
  */
 export async function performReceiptOCR(imageUrl: string): Promise<string> {
   const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
 
-  if (apiKey) {
-    try {
-      const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: { source: { imageUri: imageUrl } },
-              features: [{ type: "TEXT_DETECTION" }],
-            },
-          ],
-        }),
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as any;
-        const fullText = data.responses?.[0]?.fullTextAnnotation?.text;
-        if (fullText) {
-          return fullText;
-        }
-      }
-    } catch (error) {
-      console.error("GCP Vision OCR failed, falling back to simulated extraction:", error);
-    }
+  if (!apiKey) {
+    throw new Error("Receipt reading is not configured. Add GOOGLE_CLOUD_VISION_API_KEY to enable it.");
   }
 
-  // Fallback / Simulated OCR for local testing
-  // If the image URL contains keywords, simulate matching receipts
-  const lowercaseUrl = imageUrl.toLowerCase();
-  
-  if (lowercaseUrl.includes("easypaisa") || lowercaseUrl.includes("receipt") || lowercaseUrl.includes("proof")) {
-    // Return a simulated Easypaisa/JazzCash successful transaction slip
-    return `
-      --- TRANSACTION SUCCESSFUL ---
-      Amount: PKR 2,500.00
-      Sent To: Sana Malik
-      Account: 03001234567
-      Channel: Easypaisa Mobile Account
-      Transaction ID: EP-987251403
-      Date: 2026-07-09 16:30:12
-      Status: Completed
-    `;
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(imageUrl);
+  } catch {
+    throw new Error("Receipt reading needs a public HTTPS image link. A transaction ID can still be reviewed manually.");
+  }
+  if (parsedUrl.protocol !== "https:") {
+    throw new Error("Receipt image links must use HTTPS.");
   }
 
-  // Default mock slip
-  return `
-    HBL Mobile Banking Transfer
-    Transfer Successful
-    To Account: 012345678910 (Sana's Studio)
-    Amount: 1,500.00 PKR
-    Reference: Cake Deposit Order
-    Ref ID: HBL-TRX-55102
-  `;
+  const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [
+        {
+          image: { source: { imageUri: imageUrl } },
+          features: [{ type: "TEXT_DETECTION" }],
+        },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error("Receipt reading service could not read this image.");
+
+  const data = (await response.json()) as any;
+  const fullText = data.responses?.[0]?.fullTextAnnotation?.text;
+  if (!fullText) throw new Error("No readable receipt text was found in this image.");
+  return fullText;
 }
 
 /**
@@ -144,9 +124,9 @@ export function verifyReceiptText(
 
   let message = "";
   if (verified) {
-    message = `Payment successfully auto-verified via OCR. Matched amount (PKR ${extractedAmount}) and recipient account.`;
+    message = `Receipt details appear to match (PKR ${extractedAmount}), but a baker must manually confirm the transfer.`;
   } else {
-    message = `Verification failed. Extracted amount: PKR ${extractedAmount} (Expected at least PKR ${expectedDeposit}). Recipient account match: ${matchesAccount ? "YES" : "NO"}.`;
+    message = `Receipt details need manual review. Extracted amount: PKR ${extractedAmount} (expected at least PKR ${expectedDeposit}). Recipient account match: ${matchesAccount ? "YES" : "NO"}.`;
   }
 
   return {
@@ -160,7 +140,8 @@ export function verifyReceiptText(
 }
 
 /**
- * Triggers OCR receipt processing, stores result in the order and auto-verifies
+ * Triggers OCR receipt processing for a baker's review. OCR is advisory only:
+ * it must never update an order to paid or set an advance as paid.
  */
 export async function triggerPaymentOCRVerification(orderId: number): Promise<OCRVerificationResult | null> {
   const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
@@ -185,19 +166,7 @@ export async function triggerPaymentOCRVerification(orderId: number): Promise<OC
     baker.businessName
   );
 
-  // Update order status if verification succeeds
-  if (result.verified) {
-    await db.update(ordersTable)
-      .set({
-        advancePaid: true,
-        paymentStatus: "paid", // or partial
-        paymentAmountReceived: result.extractedAmount
-      })
-      .where(eq(ordersTable.id, orderId));
-  }
-
-  // Log verification info to server console
-  console.log(`[OCR Verification] Order #${orderId}: ${result.message}`);
+  console.log(`[Receipt review] Order #${orderId}: ${result.message}`);
 
   return result;
 }

@@ -113,12 +113,17 @@ router.post("/orders", async (req, res): Promise<void> => {
     totalPkr: trustedTotalPkr,
     buyerId: customer.id,
     buyerWhatsapp: phone,
+    // A buyer-submitted receipt is evidence only. Only the authenticated baker
+    // can confirm payment through PATCH /orders/:orderId/payment.
+    advancePaid: false,
+    paymentStatus: "pending",
+    paymentAmountReceived: null,
   } as any).returning();
   
-  // Auto-trigger OCR verification if a payment screenshot URL is provided on checkout
-  if (parsed.data.paymentScreenshotUrl) {
+  // OCR provides an advisory receipt summary for the baker; it cannot mark paid.
+  if (/^https:\/\//i.test(parsed.data.paymentScreenshotUrl ?? "")) {
     triggerPaymentOCRVerification(order.id).catch((err) =>
-      console.error("Auto-OCR payment verification failed asynchronously:", err)
+      console.error("Receipt review could not run asynchronously:", err)
     );
   }
 
@@ -210,7 +215,7 @@ router.patch("/orders/:orderId/payment", requireBakerAuth, async (req, res): Pro
     return;
   }
   const [order] = await db.update(ordersTable)
-    .set({ paymentStatus: "paid", paymentAmountReceived: parsed.data.amountReceived })
+    .set({ paymentStatus: "paid", advancePaid: true, paymentAmountReceived: parsed.data.amountReceived })
     .where(and(eq(ordersTable.id, params.data.orderId), eq(ordersTable.bakerId, (req as AuthenticatedRequest).bakerId!)))
     .returning();
   if (!order) {

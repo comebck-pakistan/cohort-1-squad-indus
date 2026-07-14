@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, getAuth, getRedirectResult, onAuthStateChanged, signInWithPopup, signOut, type User } from "firebase/auth";
+import { GoogleAuthProvider, RecaptchaVerifier, getAuth, getRedirectResult, onAuthStateChanged, signInWithPhoneNumber, signInWithPopup, signOut, type ConfirmationResult, type User } from "firebase/auth";
 import { initializeApp, type FirebaseApp } from "firebase/app";
 
 const config = {
@@ -31,6 +31,16 @@ export async function signInWithGoogle(): Promise<User> {
   // on Firebase's handler page in browsers that restrict cross-site storage.
   const result = await signInWithPopup(auth, provider);
   return result.user;
+}
+
+/** Starts Firebase SMS authentication. The verifier is invisible but Firebase
+ * may show a challenge when it detects unusual traffic. */
+export async function sendPhoneVerification(phoneNumber: string): Promise<ConfirmationResult> {
+  const auth = getFirebaseAuth();
+  const containerId = "firebase-phone-recaptcha";
+  document.getElementById(containerId)?.replaceChildren();
+  const verifier = new RecaptchaVerifier(auth, containerId, { size: "invisible" });
+  return signInWithPhoneNumber(auth, phoneNumber, verifier);
 }
 
 export async function getGoogleRedirectUser(): Promise<User | null> {

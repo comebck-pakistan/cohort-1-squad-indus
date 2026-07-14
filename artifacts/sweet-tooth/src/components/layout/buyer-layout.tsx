@@ -9,7 +9,8 @@ export function BuyerLayout({ children }: { children: React.ReactNode }) {
             <span className="font-serif text-2xl font-bold text-primary">Sweet Tooth</span>
           </Link>
           <div className="flex items-center gap-5">
-            <Link href="/" className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-primary md:inline">How it works</Link>
+            <a href="/#how-it-works" className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-primary md:inline">How it works</a>
+            <a href="/#pricing" className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-primary md:inline">Pricing</a>
             <Link href="/contact" className="hidden text-sm font-medium text-muted-foreground transition-colors hover:text-primary md:inline">Contact</Link>
             <Link
               href="/dashboard/login"
@@ -26,7 +27,7 @@ export function BuyerLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border bg-card py-12 mt-16">
         <div className="container mx-auto grid max-w-6xl gap-8 px-4 text-left md:grid-cols-[1.2fr_.8fr_.8fr]">
           <div><p className="mb-2 font-serif text-2xl font-bold text-primary">Sweet Tooth</p><p className="max-w-sm text-sm leading-relaxed text-muted-foreground">The calm operating system for Pakistan&apos;s home bakers: one menu, one bakery agent, and one place for every order.</p></div>
-          <div><p className="mb-3 text-sm font-bold text-foreground">Platform</p><div className="space-y-2 text-sm text-muted-foreground"><Link href="/dashboard/register" className="block hover:text-primary">Create your bakery</Link><Link href="/dashboard/login" className="block hover:text-primary">Baker sign in</Link></div></div>
+          <div><p className="mb-3 text-sm font-bold text-foreground">Platform</p><div className="space-y-2 text-sm text-muted-foreground"><a href="/#pricing" className="block hover:text-primary">Plans and pricing</a><Link href="/dashboard/register" className="block hover:text-primary">Create your bakery</Link><Link href="/dashboard/login" className="block hover:text-primary">Baker sign in</Link></div></div>
           <div><p className="mb-3 text-sm font-bold text-foreground">Support</p><div className="space-y-2 text-sm text-muted-foreground"><Link href="/contact" className="block hover:text-primary">Contact the team</Link><a href="/#how-it-works" className="block hover:text-primary">How it works</a></div></div>
         </div>
       </footer>

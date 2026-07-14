@@ -14,6 +14,7 @@ setAuthTokenGetter(() => getBakerSession()?.token ?? null);
 
 // Public pages: customers reach a baker's menu through a direct shared link.
 import Home from "@/pages/buyer/home";
+import Contact from "@/pages/contact";
 import BakerProfile from "@/pages/buyer/baker-profile";
 import Cart from "@/pages/buyer/cart";
 import BuyerOrders from "@/pages/buyer/orders";
@@ -44,6 +45,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/contact" component={Contact} />
       <Route path="/menu/:id" component={BakerProfile} />
       <Route path="/bakers/:id" component={BakerProfile} />
       <Route path="/cart" component={Cart} />

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { BuyerLayout } from "@/components/layout/buyer-layout";
-import { ArrowRight, Bot, Instagram, MessageSquare, Phone, Share2, Sparkles } from "lucide-react";
+import { ArrowRight, Bot, CheckCircle2, Clock3, Instagram, MessageSquare, Phone, Share2, ShieldCheck, Sparkles } from "lucide-react";
 
 const features = [
   { icon: Bot, title: "Your always-on order agent", text: "It answers menu, availability, delivery, dietary and custom-order questions using the rules you set - even when you are busy baking." },
@@ -35,10 +35,14 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-20">
+      <section id="how-it-works" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-20">
         <div className="max-w-2xl"><p className="text-sm font-bold uppercase tracking-wider text-primary">Agent-first bakery operations</p><h2 className="mt-3 font-serif text-4xl font-bold">One assistant. One dashboard. No lost customer chats.</h2></div>
         <div className="mt-10 grid gap-5 md:grid-cols-3">{features.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-2xl border border-border bg-card p-6 shadow-sm"><div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div><h3 className="font-serif text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{text}</p></article>)}</div>
       </section>
+
+      <section className="border-y border-border bg-card px-4 py-16"><div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3"><div><p className="text-3xl font-bold text-primary">1 shared link</p><p className="mt-2 text-sm text-muted-foreground">A branded menu you can put in your WhatsApp bio, Instagram profile, or QR code.</p></div><div><p className="text-3xl font-bold text-primary">24/7 first reply</p><p className="mt-2 text-sm text-muted-foreground">Your agent handles the common questions while you focus on baking and fulfilment.</p></div><div><p className="text-3xl font-bold text-primary">You stay in control</p><p className="mt-2 text-sm text-muted-foreground">Set availability, delivery sectors, dietary labels, policies and escalation rules.</p></div></div></section>
+
+      <section className="mx-auto grid max-w-6xl gap-12 px-4 py-20 md:grid-cols-[.9fr_1.1fr] md:items-center"><div><p className="text-sm font-bold uppercase tracking-wider text-primary">A professional customer experience</p><h2 className="mt-3 font-serif text-4xl font-bold">Built to answer clearly, not make things up.</h2><p className="mt-5 leading-relaxed text-muted-foreground">The agent is grounded in your menu, dietary notes, delivery areas, availability and payment policies. When a customer needs a human, it creates a clear follow-up for you instead of guessing.</p><Link href="/contact" className="mt-7 inline-flex items-center gap-2 font-bold text-primary hover:underline">Talk to the Sweet Tooth team <ArrowRight className="h-4 w-4" /></Link></div><div className="grid gap-4 sm:grid-cols-2"><div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-7 w-7 text-primary" /><h3 className="mt-4 font-bold">Menu-grounded answers</h3><p className="mt-2 text-sm text-muted-foreground">Product facts and rules stay at the centre of every response.</p></div><div className="rounded-2xl border border-border p-5"><Clock3 className="h-7 w-7 text-primary" /><h3 className="mt-4 font-bold">Availability-aware</h3><p className="mt-2 text-sm text-muted-foreground">Tell customers your lead time, working hours and delivery areas.</p></div><div className="rounded-2xl border border-border p-5 sm:col-span-2"><CheckCircle2 className="h-7 w-7 text-primary" /><h3 className="mt-4 font-bold">Your bakery, your rules</h3><p className="mt-2 text-sm text-muted-foreground">You approve the policies, payments, custom-order questions and agent escalation settings from one dashboard.</p></div></div></section>
 
       <section className="bg-muted px-4 py-20"><div className="mx-auto max-w-4xl text-center"><h2 className="font-serif text-4xl font-bold">Set your rules. Let the agent handle the first reply.</h2><p className="mx-auto mt-4 max-w-2xl text-muted-foreground">Add your menu, delivery areas, availability and policies once. Your agent uses those facts to answer customers, while the dashboard keeps you in control.</p><Link href="/dashboard/register" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground hover:bg-primary/90">Create your bakery agent <ArrowRight className="h-4 w-4" /></Link></div></section>
     </BuyerLayout>

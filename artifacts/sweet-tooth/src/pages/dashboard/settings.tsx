@@ -56,6 +56,11 @@ export default function DashboardSettings() {
   }, [baker]);
 
   const handleSave = () => {
+    const socialLinks = {
+      ...(instagramUrl.trim() ? { instagram: instagramUrl.trim() } : {}),
+      ...(facebookUrl.trim() ? { facebook: facebookUrl.trim() } : {}),
+    };
+
     updateBaker.mutate({
       bakerId,
       data: {
@@ -67,7 +72,7 @@ export default function DashboardSettings() {
         advancePercentage,
         paymentDetails,
         deliveryAreas: deliveryAreasText.split(",").map((area) => area.trim()).filter(Boolean),
-        socialLinks: { instagram: instagramUrl.trim(), facebook: facebookUrl.trim() },
+        socialLinks,
       }
     }, {
       onSuccess: () => {

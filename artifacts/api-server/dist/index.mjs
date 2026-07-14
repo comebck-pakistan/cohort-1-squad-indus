@@ -58034,6 +58034,11 @@ function phoneLookupVariants(value, normalized) {
   const digits = normalized.slice(1);
   return [...new Set([raw, normalized, digits, `0${digits.slice(2)}`, digits.slice(2)])];
 }
+function databaseErrorCode(error) {
+  if (!error || typeof error !== "object") return void 0;
+  const candidate = error;
+  return typeof candidate.code === "string" ? candidate.code : typeof candidate.cause?.code === "string" ? candidate.cause.code : void 0;
+}
 function toAuthenticatedBaker(baker) {
   const { passwordHash, metaWebhookToken, ...safeBaker } = baker;
   return safeBaker;
@@ -58077,6 +58082,15 @@ router2.post("/bakers", async (req, res) => {
   }
   const { password, whatsappNumber: _whatsappNumber, ...rest } = parsed.data;
   const passwordHash = hashPassword(password);
+  const phoneVariants = phoneLookupVariants(parsed.data.whatsappNumber, normalizedPhone);
+  const [existingBaker] = await db.select({ id: bakersTable.id }).from(bakersTable).where(or(
+    eq(bakersTable.email, rest.email.trim().toLowerCase()),
+    inArray(bakersTable.whatsappNumber, phoneVariants)
+  ));
+  if (existingBaker) {
+    res.status(409).json({ error: "An account with this email or WhatsApp number already exists. Sign in instead." });
+    return;
+  }
   try {
     const [baker] = await db.insert(bakersTable).values({
       ...rest,
@@ -58086,10 +58100,11 @@ router2.post("/bakers", async (req, res) => {
     const token = signToken({ bakerId: baker.id, email: baker.email });
     res.status(201).json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });
   } catch (error40) {
-    if (error40.code === "23505") {
-      res.status(400).json({ error: "Email or WhatsApp number already registered" });
+    if (databaseErrorCode(error40) === "23505") {
+      res.status(409).json({ error: "An account with this email or WhatsApp number already exists. Sign in instead." });
     } else {
-      res.status(500).json({ error: error40.message });
+      console.error("Baker registration failed", error40);
+      res.status(500).json({ error: "We could not create your bakery right now. Please try again in a moment." });
     }
   }
 });
@@ -60105,7 +60120,7 @@ CREATE TABLE IF NOT EXISTS sweet_tooth.bakers (\r
   instagram_agent_enabled BOOLEAN NOT NULL DEFAULT false,\r
   meta_webhook_token TEXT,\r
   instagram_page_id TEXT,\r
-  marketplace_visible BOOLEAN NOT NULL DEFAULT true,\r
+  marketplace_visible BOOLEAN NOT NULL DEFAULT false,\r
   subscription_plan TEXT NOT NULL DEFAULT 'free',\r
   rating_avg REAL NOT NULL DEFAULT 0,\r
   total_orders INTEGER NOT NULL DEFAULT 0,\r
@@ -60297,6 +60312,26 @@ ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS require_advance BOOLEAN 
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000;
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_percentage INTEGER NOT NULL DEFAULT 50;
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS payment_details TEXT NOT NULL DEFAULT '';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS owner_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS tagline TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS area TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS delivery_areas TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS cod_policy TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS return_policy TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS max_orders_per_day INTEGER NOT NULL DEFAULT 10;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS agent_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS agent_config JSONB DEFAULT '{}';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS whatsapp_agent_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS instagram_agent_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS meta_webhook_token TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS instagram_page_id TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS marketplace_visible BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'free';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS rating_avg REAL NOT NULL DEFAULT 0;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS total_orders INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS flavour TEXT;
 ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS text_on_cake TEXT;
 ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;

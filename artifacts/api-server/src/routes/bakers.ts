@@ -32,6 +32,16 @@ function phoneLookupVariants(value: string, normalized: string | null): string[]
   return [...new Set([raw, normalized, digits, `0${digits.slice(2)}`, digits.slice(2)])];
 }
 
+function databaseErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as { code?: unknown; cause?: { code?: unknown } };
+  return typeof candidate.code === "string"
+    ? candidate.code
+    : typeof candidate.cause?.code === "string"
+      ? candidate.cause.code
+      : undefined;
+}
+
 function toPublicBaker(baker: Record<string, unknown>) {
   const { passwordHash, metaWebhookToken, whatsappNumber, email, paymentDetails, ...publicBaker } = baker;
   const digits = String(whatsappNumber ?? "").replace(/\D/g, "");
@@ -103,6 +113,15 @@ router.post("/bakers", async (req, res): Promise<void> => {
   }
   const { password, whatsappNumber: _whatsappNumber, ...rest } = parsed.data;
   const passwordHash = hashPassword(password);
+  const phoneVariants = phoneLookupVariants(parsed.data.whatsappNumber, normalizedPhone);
+  const [existingBaker] = await db.select({ id: bakersTable.id }).from(bakersTable).where(or(
+    eq(bakersTable.email, rest.email.trim().toLowerCase()),
+    inArray(bakersTable.whatsappNumber, phoneVariants),
+  ));
+  if (existingBaker) {
+    res.status(409).json({ error: "An account with this email or WhatsApp number already exists. Sign in instead." });
+    return;
+  }
 
   try {
     const [baker] = await db.insert(bakersTable).values({
@@ -113,11 +132,12 @@ router.post("/bakers", async (req, res): Promise<void> => {
     
     const token = signToken({ bakerId: baker.id, email: baker.email });
     res.status(201).json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });
-  } catch (error: any) {
-    if (error.code === "23505") {
-      res.status(400).json({ error: "Email or WhatsApp number already registered" });
+  } catch (error) {
+    if (databaseErrorCode(error) === "23505") {
+      res.status(409).json({ error: "An account with this email or WhatsApp number already exists. Sign in instead." });
     } else {
-      res.status(500).json({ error: error.message });
+      console.error("Baker registration failed", error);
+      res.status(500).json({ error: "We could not create your bakery right now. Please try again in a moment." });
     }
   }
 });

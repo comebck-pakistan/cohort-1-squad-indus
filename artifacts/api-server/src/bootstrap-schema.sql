@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS sweet_tooth.bakers (
   instagram_agent_enabled BOOLEAN NOT NULL DEFAULT false,
   meta_webhook_token TEXT,
   instagram_page_id TEXT,
-  marketplace_visible BOOLEAN NOT NULL DEFAULT true,
+  marketplace_visible BOOLEAN NOT NULL DEFAULT false,
   subscription_plan TEXT NOT NULL DEFAULT 'free',
   rating_avg REAL NOT NULL DEFAULT 0,
   total_orders INTEGER NOT NULL DEFAULT 0,
@@ -220,6 +220,26 @@ ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS require_advance BOOLEAN 
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_threshold_pkr INTEGER NOT NULL DEFAULT 2000;
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS advance_percentage INTEGER NOT NULL DEFAULT 50;
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS payment_details TEXT NOT NULL DEFAULT '';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS owner_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS tagline TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS area TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS delivery_areas TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS cod_policy TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS return_policy TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS max_orders_per_day INTEGER NOT NULL DEFAULT 10;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS agent_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS agent_config JSONB DEFAULT '{}';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS whatsapp_agent_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS instagram_agent_enabled BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS meta_webhook_token TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS instagram_page_id TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS marketplace_visible BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS subscription_plan TEXT NOT NULL DEFAULT 'free';
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS rating_avg REAL NOT NULL DEFAULT 0;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS total_orders INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS flavour TEXT;
 ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS text_on_cake TEXT;
 ALTER TABLE sweet_tooth.orders ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;

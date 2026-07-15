@@ -1,58 +1,26 @@
 import { Router } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, cartItemsTable } from "@workspace/db";
-import {
-  RemoveFromCartParams,
-  AddToCartBody,
-  GetCartQueryParams,
-  ClearCartQueryParams,
-} from "@workspace/api-zod";
 
 const router = Router();
 
-// GET /cart
-router.get("/cart", async (req, res): Promise<void> => {
-  const query = GetCartQueryParams.safeParse(req.query);
-  if (!query.success) {
-    res.status(400).json({ error: query.error.message });
-    return;
-  }
-  const items = await db.select().from(cartItemsTable)
-    .where(eq(cartItemsTable.buyerId, query.data.buyerId));
-  res.json(items);
+// Sweet Tooth is currently channel-first: orders are confirmed through the
+// baker's selected WhatsApp or Instagram conversation. The former browser
+// cart trusted a client-provided buyerId and must not be exposed publicly.
+router.all("/cart", (_req, res): void => {
+  res.status(410).json({
+    error: "Website checkout is not enabled. Please place your order through the bakery's selected contact channel.",
+  });
 });
 
-// POST /cart
-router.post("/cart", async (req, res): Promise<void> => {
-  const parsed = AddToCartBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [item] = await db.insert(cartItemsTable).values(parsed.data).returning();
-  res.status(201).json(item);
+router.all("/cart/:cartItemId", (_req, res): void => {
+  res.status(410).json({
+    error: "Website checkout is not enabled. Please place your order through the bakery's selected contact channel.",
+  });
 });
 
-// DELETE /cart/:cartItemId
-router.delete("/cart/:cartItemId", async (req, res): Promise<void> => {
-  const params = RemoveFromCartParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  await db.delete(cartItemsTable).where(eq(cartItemsTable.id, params.data.cartItemId));
-  res.sendStatus(204);
-});
-
-// DELETE /cart/clear
-router.delete("/cart/clear", async (req, res): Promise<void> => {
-  const query = ClearCartQueryParams.safeParse(req.query);
-  if (!query.success) {
-    res.status(400).json({ error: query.error.message });
-    return;
-  }
-  await db.delete(cartItemsTable).where(eq(cartItemsTable.buyerId, query.data.buyerId));
-  res.sendStatus(204);
+router.all("/cart/clear", (_req, res): void => {
+  res.status(410).json({
+    error: "Website checkout is not enabled. Please place your order through the bakery's selected contact channel.",
+  });
 });
 
 export default router;

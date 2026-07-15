@@ -5,16 +5,11 @@ import {
   useGetBakerProducts, 
   useGetBakerReviews,
   useSendChatMessage,
-  useAddToCart,
   getGetBakerQueryKey, 
   getGetBakerProductsQueryKey,
-  getGetBakerReviewsQueryKey,
-  getGetCartQueryKey
+  getGetBakerReviewsQueryKey
 } from "@workspace/api-client-react";
 import { useParams } from "wouter";
-import { Link } from "wouter";
-import { useBuyerSession } from "@/hooks/use-session";
-import { useQueryClient } from "@tanstack/react-query";
 import { MessageCircle, X, Send, User, Star, Phone, Sparkles, Facebook, Instagram } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -28,40 +23,13 @@ type PublicChatMessage = {
 export default function BakerProfile() {
   const { id } = useParams<{ id: string }>();
   const bakerId = parseInt(id, 10);
-  const { buyerId } = useBuyerSession();
-  const queryClient = useQueryClient();
   const { toast } = useToast();
   
   const { data: baker, isLoading: loadingBaker } = useGetBaker(bakerId, { query: { enabled: !!bakerId, queryKey: getGetBakerQueryKey(bakerId) } });
   const { data: products, isLoading: loadingProducts } = useGetBakerProducts(bakerId, { query: { enabled: !!bakerId, queryKey: getGetBakerProductsQueryKey(bakerId) } });
   const { data: reviews } = useGetBakerReviews(bakerId, { query: { enabled: !!bakerId, queryKey: getGetBakerReviewsQueryKey(bakerId) } });
 
-  const addToCart = useAddToCart();
   const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>({});
-
-  const handleAddToCart = (product: any) => {
-    const sizeLabel = selectedSizes[product.id] || (product.sizes?.[0]?.label || "Standard");
-    const sizeOpt = product.sizes?.find((s: any) => s.label === sizeLabel);
-    const price = sizeOpt ? sizeOpt.pricePkr : product.basePricePkr;
-
-    addToCart.mutate({
-      data: {
-        buyerId,
-        bakerId,
-        productId: product.id,
-        productName: product.name,
-        sizeLabel,
-        quantity: 1,
-        unitPricePkr: price,
-        photoUrl: product.photoUrl
-      }
-    }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetCartQueryKey({ buyerId }) });
-        toast({ title: "Added to cart", description: `${product.name} added to your cart.` });
-      }
-    });
-  };
 
   // Chat Widget State
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -130,6 +98,21 @@ export default function BakerProfile() {
   const askAboutProduct = (productName: string) => {
     setIsChatOpen(true);
     handleQuickMessage(`Tell me about ${productName}. Is it available, and can I order it today?`);
+  };
+
+  const orderProduct = (productName: string) => {
+    if (!channelHandoff) {
+      askAboutProduct(productName);
+      return;
+    }
+    if (channelHandoff.icon === "whatsapp") {
+      const url = new URL(channelHandoff.href);
+      url.searchParams.set("text", `Assalam-o-Alaikum! I would like to order ${productName}. Please share available sizes, date options, and delivery details.`);
+      window.open(url.toString(), "_blank", "noopener,noreferrer");
+      return;
+    }
+    window.open(channelHandoff.href, "_blank", "noopener,noreferrer");
+    toast({ title: "Instagram opened", description: `Message the bakery to order ${productName}.` });
   };
 
   const whatsappChatUrl = (baker as { whatsappChatUrl?: string | null } | undefined)?.whatsappChatUrl;
@@ -215,7 +198,7 @@ export default function BakerProfile() {
               </div>
             </div>
 
-            <div className="mb-8 flex flex-wrap items-center justify-between gap-3"><h2 className="text-3xl font-bold font-serif">Menu</h2><Link href="/cart" className="rounded-md border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-primary-foreground">View my order</Link></div>
+            <div className="mb-8"><h2 className="text-3xl font-bold font-serif">Menu</h2><p className="mt-2 text-sm text-muted-foreground">Choose an item, then continue your order in the bakery’s selected conversation channel.</p></div>
             
             {loadingProducts ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
@@ -282,11 +265,11 @@ export default function BakerProfile() {
                                 </button>
                               )}
                               <button
-                                onClick={() => handleAddToCart(product)}
-                                disabled={addToCart.isPending || !product.isAvailable}
+                                onClick={() => orderProduct(product.name)}
+                                disabled={!product.isAvailable}
                                 className="bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground px-4 py-1.5 rounded-md text-sm font-bold transition-colors disabled:opacity-50"
                               >
-                                {product.isAvailable ? 'Add +' : 'Out'}
+                                {product.isAvailable ? channelHandoff?.icon === "whatsapp" ? "Order on WhatsApp" : channelHandoff?.icon === "instagram" ? "Order on Instagram" : "Ask to order" : "Out"}
                               </button>
                             </div>
                           </div>

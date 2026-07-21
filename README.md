@@ -19,7 +19,7 @@
 * **Zero Manual Ledger Checks**: Built-in vision analyzer (`receipt-analyzer.ts`) scans payment screenshots (Easypaisa, JazzCash, Bank Transfers).
 * **Automatic Verification**: Matches transfer amounts and destination accounts, updates order status to "Paid", and alerts the AI assistant.
 
-### 4. 🧠 Najomi AI Assistant & RAG Memory Engine
+### 4. 🧠 Smart AI Assistant & RAG Memory Engine
 * **24/7 Smart Bot**: Auto-answers questions regarding eggless availability, nut allergies, delivery areas, and custom cake lead times.
 * **Customer Memory**: Remembers past buyer preferences (allergies, favorite cakes, delivery locations) to provide personalized greetings on return.
 * **Auto-Reindexing**: Updating catalog prices or toggling stock availability instantly rebuilds the vector knowledge index.

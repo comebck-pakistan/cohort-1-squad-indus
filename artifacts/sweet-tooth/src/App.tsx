@@ -11,7 +11,7 @@ import {
 } from "@/lib/managed-auth";
 
 // Read API URL from environment variable, falling back to same-origin proxy
-const apiUrl = import.meta.env.VITE_API_URL || "https://cohort-1-squad-indus-api-server-z3b.vercel.app";
+const apiUrl = import.meta.env.VITE_API_URL || "https://cohort-1-squad-indus-api-server.vercel.app";
 if (apiUrl) {
   setBaseUrl(apiUrl);
 }

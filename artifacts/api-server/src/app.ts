@@ -13,7 +13,9 @@ const app = express();
 const publishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xldmVyLWd1cHB5LTU5LmNsZXJrLmFjY291bnRzLmRldiQ";
 const secretKey = process.env.CLERK_SECRET_KEY;
 
-if (secretKey) {
+const isPlaceholderSecretKey = !secretKey || secretKey.includes("sk_test_w3hP8z2K9x7Y6v5U4t3S2r1Q0p9O8n7M6l5K4j3I2h1");
+
+if (secretKey && !isPlaceholderSecretKey) {
   app.use(clerkMiddleware({ publishableKey, secretKey }));
 }
 

@@ -15,8 +15,13 @@ function clerkIsRequired(): boolean {
   return process.env.AUTH_MODE === "clerk" || process.env.NODE_ENV === "production";
 }
 
+function isRealClerkConfigured(): boolean {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  return Boolean(secretKey && !secretKey.includes("sk_test_w3hP8z2K9x7Y6v5U4t3S2r1Q0p9O8n7M6l5K4j3I2h1"));
+}
+
 export function requireClerkUser(req: Request, res: Response, next: NextFunction): void {
-  if (!process.env.CLERK_SECRET_KEY) {
+  if (!isRealClerkConfigured()) {
     res.status(503).json({ error: "Managed authentication is not configured." });
     return;
   }
@@ -34,7 +39,7 @@ export function requireClerkUser(req: Request, res: Response, next: NextFunction
 }
 
 export async function requireBakerAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  if (process.env.CLERK_SECRET_KEY && process.env.AUTH_MODE !== "legacy") {
+  if (isRealClerkConfigured() && process.env.AUTH_MODE !== "legacy") {
     const auth = getAuth(req);
     if (!auth.userId) {
       res.status(401).json({ error: "Sign in is required." });

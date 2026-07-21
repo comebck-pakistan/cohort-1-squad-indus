@@ -71610,8 +71610,12 @@ function clerkIsRequired() {
   if (process.env.AUTH_MODE === "legacy") return false;
   return process.env.AUTH_MODE === "clerk" || process.env.NODE_ENV === "production";
 }
+function isRealClerkConfigured() {
+  const secretKey2 = process.env.CLERK_SECRET_KEY;
+  return Boolean(secretKey2 && !secretKey2.includes("sk_test_w3hP8z2K9x7Y6v5U4t3S2r1Q0p9O8n7M6l5K4j3I2h1"));
+}
 function requireClerkUser(req, res, next) {
-  if (!process.env.CLERK_SECRET_KEY) {
+  if (!isRealClerkConfigured()) {
     res.status(503).json({ error: "Managed authentication is not configured." });
     return;
   }
@@ -71626,7 +71630,7 @@ function requireClerkUser(req, res, next) {
   next();
 }
 async function requireBakerAuth(req, res, next) {
-  if (process.env.CLERK_SECRET_KEY && process.env.AUTH_MODE !== "legacy") {
+  if (isRealClerkConfigured() && process.env.AUTH_MODE !== "legacy") {
     const auth = getAuth(req);
     if (!auth.userId) {
       res.status(401).json({ error: "Sign in is required." });
@@ -74933,7 +74937,8 @@ await ensureDatabase();
 var app = (0, import_express19.default)();
 var publishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xldmVyLWd1cHB5LTU5LmNsZXJrLmFjY291bnRzLmRldiQ";
 var secretKey = process.env.CLERK_SECRET_KEY;
-if (secretKey) {
+var isPlaceholderSecretKey = !secretKey || secretKey.includes("sk_test_w3hP8z2K9x7Y6v5U4t3S2r1Q0p9O8n7M6l5K4j3I2h1");
+if (secretKey && !isPlaceholderSecretKey) {
   app.use(clerkMiddleware({ publishableKey, secretKey }));
 }
 var allowedOrigins = new Set([

@@ -10,8 +10,11 @@ await ensureDatabase();
 
 const app = express();
 
-if (process.env.CLERK_SECRET_KEY) {
-  app.use(clerkMiddleware());
+const publishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xldmVyLWd1cHB5LTU5LmNsZXJrLmFjY291bnRzLmRldiQ";
+const secretKey = process.env.CLERK_SECRET_KEY;
+
+if (secretKey) {
+  app.use(clerkMiddleware({ publishableKey, secretKey }));
 }
 
 const allowedOrigins = new Set([

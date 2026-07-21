@@ -26380,10 +26380,10 @@ var require_messages = __commonJS({
     };
     exports.AuthenticationMD5Password = AuthenticationMD5Password;
     var BackendKeyDataMessage = class {
-      constructor(length, processID, secretKey) {
+      constructor(length, processID, secretKey2) {
         this.length = length;
         this.processID = processID;
-        this.secretKey = secretKey;
+        this.secretKey = secretKey2;
         this.name = "backendKeyData";
       }
     };
@@ -26676,13 +26676,13 @@ var require_serializer = __commonJS({
       buff.writeUInt32BE(rows, buff.length - 4);
       return buff;
     };
-    var cancel = (processID, secretKey) => {
+    var cancel = (processID, secretKey2) => {
       const buffer = Buffer.allocUnsafe(16);
       buffer.writeInt32BE(16, 0);
       buffer.writeInt16BE(1234, 4);
       buffer.writeInt16BE(5678, 6);
       buffer.writeInt32BE(processID, 8);
-      buffer.writeInt32BE(secretKey, 12);
+      buffer.writeInt32BE(secretKey2, 12);
       return buffer;
     };
     var cstringMessage = (code, string4) => {
@@ -27046,8 +27046,8 @@ var require_parser = __commonJS({
     };
     var parseBackendKeyData = (reader) => {
       const processID = reader.int32();
-      const secretKey = reader.int32();
-      return new messages_1.BackendKeyDataMessage(LATEINIT_LENGTH, processID, secretKey);
+      const secretKey2 = reader.int32();
+      return new messages_1.BackendKeyDataMessage(LATEINIT_LENGTH, processID, secretKey2);
     };
     var parseAuthenticationResponse = (reader, length) => {
       const code = reader.int32();
@@ -27344,8 +27344,8 @@ var require_connection = __commonJS({
       startup(config2) {
         this.stream.write(serialize.startup(config2));
       }
-      cancel(processID, secretKey) {
-        this._send(serialize.cancel(processID, secretKey));
+      cancel(processID, secretKey2) {
+        this._send(serialize.cancel(processID, secretKey2));
       }
       password(password) {
         this._send(serialize.password(password));
@@ -38074,8 +38074,8 @@ function isProductionFromPublishableKey(apiKey) {
 function isDevelopmentFromSecretKey(apiKey) {
   return apiKey.startsWith("test_") || apiKey.startsWith("sk_test_");
 }
-async function getCookieSuffix(publishableKey, subtle = globalThis.crypto.subtle) {
-  const data = new TextEncoder().encode(publishableKey);
+async function getCookieSuffix(publishableKey2, subtle = globalThis.crypto.subtle) {
+  const data = new TextEncoder().encode(publishableKey2);
   const digest = await subtle.digest("sha-1", data);
   return isomorphicBtoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/gi, "-").replace(/\//gi, "_").substring(0, 8);
 }
@@ -38875,8 +38875,8 @@ function normalizeHostname(hostnameOrUrl) {
   }
   return hostnameOrUrl.split("/")[0] || "";
 }
-function getAutoProxyUrlFromEnvironment({ publishableKey, hasDomain = false, hasProxyUrl = false, environment = getDefaultEnvironment() }) {
-  if (hasProxyUrl || hasDomain || !isProductionFromPublishableKey(publishableKey)) return "";
+function getAutoProxyUrlFromEnvironment({ publishableKey: publishableKey2, hasDomain = false, hasProxyUrl = false, environment = getDefaultEnvironment() }) {
+  if (hasProxyUrl || hasDomain || !isProductionFromPublishableKey(publishableKey2)) return "";
   if (isAutoProxyDisabledFromEnvironment(environment)) return "";
   if (environment.VERCEL_TARGET_ENV !== "production") return "";
   const vercelProductionHostname = environment.VERCEL_PROJECT_PRODUCTION_URL;
@@ -40874,16 +40874,16 @@ function loadClerkJwkFromPem(params) {
   return jwk;
 }
 async function loadClerkJWKFromRemote(params) {
-  const { secretKey, apiUrl = API_URL, apiVersion = API_VERSION, kid, skipJwksCache } = params;
+  const { secretKey: secretKey2, apiUrl = API_URL, apiVersion = API_VERSION, kid, skipJwksCache } = params;
   if (skipJwksCache || cacheHasExpired() || !getFromCache(kid)) {
-    if (!secretKey) {
+    if (!secretKey2) {
       throw new TokenVerificationError({
         action: TokenVerificationErrorAction.ContactSupport,
         message: "Failed to load JWKS from Clerk Backend or Frontend API.",
         reason: TokenVerificationErrorReason.RemoteJWKFailedToLoad
       });
     }
-    const fetcher = () => fetchJWKSFromBAPI(apiUrl, secretKey, apiVersion);
+    const fetcher = () => fetchJWKSFromBAPI(apiUrl, secretKey2, apiVersion);
     const { keys } = await retry(fetcher);
     if (!keys || !keys.length) {
       throw new TokenVerificationError({
@@ -42892,9 +42892,9 @@ function mapperOptions(key, val, options) {
 }
 var snakecase_keys_default = snakecaseKeys;
 var AccountlessApplication = class _AccountlessApplication {
-  constructor(publishableKey, secretKey, claimUrl, apiKeysUrl) {
-    this.publishableKey = publishableKey;
-    this.secretKey = secretKey;
+  constructor(publishableKey2, secretKey2, claimUrl, apiKeysUrl) {
+    this.publishableKey = publishableKey2;
+    this.secretKey = secretKey2;
     this.claimUrl = claimUrl;
     this.apiKeysUrl = apiKeysUrl;
   }
@@ -43753,7 +43753,7 @@ var JwtTemplate = class _JwtTemplate {
   }
 };
 var Machine = class _Machine {
-  constructor(id, name, instanceId, createdAt, updatedAt, scopedMachines, defaultTokenTtl, secretKey) {
+  constructor(id, name, instanceId, createdAt, updatedAt, scopedMachines, defaultTokenTtl, secretKey2) {
     this.id = id;
     this.name = name;
     this.instanceId = instanceId;
@@ -43761,7 +43761,7 @@ var Machine = class _Machine {
     this.updatedAt = updatedAt;
     this.scopedMachines = scopedMachines;
     this.defaultTokenTtl = defaultTokenTtl;
-    this.secretKey = secretKey;
+    this.secretKey = secretKey2;
   }
   static fromJSON(data) {
     return new _Machine(
@@ -44680,7 +44680,7 @@ function jsonToObject(item) {
 function buildRequest(options) {
   const requestFn = async (requestOptions) => {
     const {
-      secretKey,
+      secretKey: secretKey2,
       machineSecretKey,
       useMachineSecretKey = false,
       requireSecretKey = true,
@@ -44692,7 +44692,7 @@ function buildRequest(options) {
     const { path, method, queryParams, headerParams, bodyParams, formData, options: opts } = requestOptions;
     const { deepSnakecaseBodyParamKeys = false } = opts || {};
     if (requireSecretKey) {
-      assertValidSecretKey(secretKey);
+      assertValidSecretKey(secretKey2);
     }
     const url2 = skipApiVersionInUrl ? joinPaths(apiUrl, path) : joinPaths(apiUrl, apiVersion, path);
     const finalUrl = new URL(url2);
@@ -44713,8 +44713,8 @@ function buildRequest(options) {
     if (!headers.has(authorizationHeader)) {
       if (useMachineSecretKey && machineSecretKey) {
         headers.set(authorizationHeader, `Bearer ${machineSecretKey}`);
-      } else if (secretKey) {
-        headers.set(authorizationHeader, `Bearer ${secretKey}`);
+      } else if (secretKey2) {
+        headers.set(authorizationHeader, `Bearer ${secretKey2}`);
       }
     }
     let res;
@@ -45526,7 +45526,7 @@ async function verifyHandshakeJwt(token, { key }) {
   return payload;
 }
 async function verifyHandshakeToken(token, options) {
-  const { secretKey, apiUrl, apiVersion, jwksCacheTtlInMs, jwtKey, skipJwksCache } = options;
+  const { secretKey: secretKey2, apiUrl, apiVersion, jwksCacheTtlInMs, jwtKey, skipJwksCache } = options;
   const { data, errors } = decodeJwt(token);
   if (errors) {
     throw errors[0];
@@ -45535,8 +45535,8 @@ async function verifyHandshakeToken(token, options) {
   let key;
   if (jwtKey) {
     key = loadClerkJwkFromPem({ kid, pem: jwtKey });
-  } else if (secretKey) {
-    key = await loadClerkJWKFromRemote({ secretKey, apiUrl, apiVersion, kid, jwksCacheTtlInMs, skipJwksCache });
+  } else if (secretKey2) {
+    key = await loadClerkJWKFromRemote({ secretKey: secretKey2, apiUrl, apiVersion, kid, jwksCacheTtlInMs, skipJwksCache });
   } else {
     throw new TokenVerificationError({
       action: TokenVerificationErrorAction.SetClerkJWTKey,
@@ -46435,8 +46435,8 @@ var authenticateRequest = (async (request, options) => {
   return authenticateRequestWithTokenInCookie();
 });
 var debugRequestState = (params) => {
-  const { isSignedIn, isAuthenticated, proxyUrl, reason, message, publishableKey, isSatellite, domain: domain2 } = params;
-  return { isSignedIn, isAuthenticated, proxyUrl, reason, message, publishableKey, isSatellite, domain: domain2 };
+  const { isSignedIn, isAuthenticated, proxyUrl, reason, message, publishableKey: publishableKey2, isSatellite, domain: domain2 } = params;
+  return { isSignedIn, isAuthenticated, proxyUrl, reason, message, publishableKey: publishableKey2, isSatellite, domain: domain2 };
 };
 var convertTokenVerificationErrorReasonToAuthErrorReason = ({
   tokenError,
@@ -46903,8 +46903,8 @@ function getDynamicHopByHopHeaders(headers) {
   );
 }
 var RESPONSE_HEADERS_TO_STRIP = /* @__PURE__ */ new Set(["content-encoding", "content-length"]);
-function fapiUrlFromPublishableKey(publishableKey) {
-  const frontendApi = parsePublishableKey(publishableKey)?.frontendApi;
+function fapiUrlFromPublishableKey(publishableKey2) {
+  const frontendApi = parsePublishableKey(publishableKey2)?.frontendApi;
   if (frontendApi?.startsWith("clerk.") && LEGACY_DEV_INSTANCE_SUFFIXES.some((suffix) => frontendApi?.endsWith(suffix))) {
     return PROD_FAPI_URL;
   }
@@ -46957,16 +46957,16 @@ function getClientIp(request) {
 }
 async function clerkFrontendApiProxy(request, options) {
   const proxyPath = stripTrailingSlashes(options?.proxyPath || DEFAULT_PROXY_PATH);
-  const publishableKey = options?.publishableKey || (typeof process !== "undefined" ? process.env?.CLERK_PUBLISHABLE_KEY : void 0);
-  const secretKey = options?.secretKey || (typeof process !== "undefined" ? process.env?.CLERK_SECRET_KEY : void 0);
-  if (!publishableKey) {
+  const publishableKey2 = options?.publishableKey || (typeof process !== "undefined" ? process.env?.CLERK_PUBLISHABLE_KEY : void 0);
+  const secretKey2 = options?.secretKey || (typeof process !== "undefined" ? process.env?.CLERK_SECRET_KEY : void 0);
+  if (!publishableKey2) {
     return createErrorResponse(
       "proxy_configuration_error",
       "Missing publishableKey. Provide it in options or set CLERK_PUBLISHABLE_KEY environment variable.",
       500
     );
   }
-  if (!secretKey) {
+  if (!secretKey2) {
     return createErrorResponse(
       "proxy_configuration_error",
       "Missing secretKey. Provide it in options or set CLERK_SECRET_KEY environment variable.",
@@ -46982,7 +46982,7 @@ async function clerkFrontendApiProxy(request, options) {
       400
     );
   }
-  const fapiBaseUrl = fapiUrlFromPublishableKey(publishableKey);
+  const fapiBaseUrl = fapiUrlFromPublishableKey(publishableKey2);
   const fapiHost = new URL(fapiBaseUrl).host;
   const targetPath = requestUrl.pathname.slice(proxyPath.length) || "/";
   const targetUrl = new URL(`${fapiBaseUrl}${targetPath}`);
@@ -47001,7 +47001,7 @@ async function clerkFrontendApiProxy(request, options) {
   const publicOrigin = derivePublicOrigin(request, requestUrl);
   const proxyUrl = `${publicOrigin}${proxyPath}`;
   headers.set("Clerk-Proxy-Url", proxyUrl);
-  headers.set("Clerk-Secret-Key", secretKey);
+  headers.set("Clerk-Secret-Key", secretKey2);
   headers.set("Host", fapiHost);
   headers.set("Accept-Encoding", "identity");
   if (!headers.has("X-Forwarded-Host")) {
@@ -47119,20 +47119,20 @@ var authenticateRequest2 = (opts) => {
     ...loadApiEnv(),
     ...loadClientEnv()
   };
-  const secretKey = secretKeyInput || env.secretKey;
+  const secretKey2 = secretKeyInput || env.secretKey;
   const machineSecretKey = machineSecretKeyInput || env.machineSecretKey;
-  const publishableKey = publishableKeyInput || env.publishableKey;
+  const publishableKey2 = publishableKeyInput || env.publishableKey;
   const isSatellite = handleValueOrFn(isSatelliteInput, clerkRequest.clerkUrl, env.isSatellite);
   const domain2 = handleValueOrFn(domainInput, clerkRequest.clerkUrl) || env.domain;
   const signInUrl = signInUrlInput || env.signInUrl;
   const proxyUrl = absoluteProxyUrl(handleValueOrFn(proxyUrlInput, clerkRequest.clerkUrl, env.proxyUrl), clerkRequest.clerkUrl.toString());
   if (isSatellite && !proxyUrl && !domain2) throw new Error(satelliteAndMissingProxyUrlAndDomain);
-  if (isSatellite && !isHttpOrHttps(signInUrl) && isDevelopmentFromSecretKey(secretKey || "")) throw new Error(satelliteAndMissingSignInUrl);
+  if (isSatellite && !isHttpOrHttps(signInUrl) && isDevelopmentFromSecretKey(secretKey2 || "")) throw new Error(satelliteAndMissingSignInUrl);
   return clerkClient2.authenticateRequest(clerkRequest, {
     ...restOptions,
-    secretKey,
+    secretKey: secretKey2,
     machineSecretKey,
-    publishableKey,
+    publishableKey: publishableKey2,
     proxyUrl,
     isSatellite,
     domain: domain2,
@@ -47175,15 +47175,15 @@ var authenticateAndDecorateRequest = (options = {}) => {
       ...loadApiEnv(),
       ...loadClientEnv()
     };
-    const publishableKey = options.publishableKey || env.publishableKey;
-    const secretKey = options.secretKey || env.secretKey;
+    const publishableKey2 = options.publishableKey || env.publishableKey;
+    const secretKey2 = options.secretKey || env.secretKey;
     if (frontendApiProxy) {
       const requestUrl = new URL(request.originalUrl || request.url, `http://${request.headers.host}`);
       if ((typeof frontendApiProxy.enabled === "function" ? frontendApiProxy.enabled(requestUrl) : frontendApiProxy.enabled) && (requestUrl.pathname === proxyPath || requestUrl.pathname.startsWith(proxyPath + "/"))) {
         const proxyResponse = await clerkFrontendApiProxy(requestToProxyRequest(request), {
           proxyPath,
-          publishableKey,
-          secretKey
+          publishableKey: publishableKey2,
+          secretKey: secretKey2
         });
         response.status(proxyResponse.status);
         proxyResponse.headers.forEach((value, key) => {
@@ -74931,8 +74931,10 @@ function ensureDatabase() {
 // src/app.ts
 await ensureDatabase();
 var app = (0, import_express19.default)();
-if (process.env.CLERK_SECRET_KEY) {
-  app.use(clerkMiddleware());
+var publishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xldmVyLWd1cHB5LTU5LmNsZXJrLmFjY291bnRzLmRldiQ";
+var secretKey = process.env.CLERK_SECRET_KEY;
+if (secretKey) {
+  app.use(clerkMiddleware({ publishableKey, secretKey }));
 }
 var allowedOrigins = new Set([
   process.env.FRONTEND_URL,

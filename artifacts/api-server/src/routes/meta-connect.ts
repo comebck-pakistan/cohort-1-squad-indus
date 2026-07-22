@@ -171,4 +171,129 @@ router.post(
   },
 );
 
+router.post(
+  "/meta/instagram/complete",
+  requireBakerAuth,
+  async (req, res): Promise<void> => {
+    const parsed = z.object({
+      code: z.string().min(10).max(2_000),
+      pageId: z.string().regex(/^\d{5,40}$/),
+      instagramAccountId: z.string().regex(/^\d{5,40}$/),
+    }).safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid Instagram connection payload." });
+      return;
+    }
+
+    const { appId, appSecret, encryptionKey } = requiredMetaConfiguration();
+    const tokenResult = await graphJson<{
+      access_token: string;
+      token_type?: string;
+      expires_in?: number;
+    }>(
+      `/oauth/access_token?client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(appSecret)}&code=${encodeURIComponent(parsed.data.code)}`,
+    );
+
+    const appAccessToken = `${appId}|${appSecret}`;
+    const debug = await graphJson<{
+      data: {
+        app_id: string;
+        is_valid: boolean;
+        expires_at?: number;
+        scopes?: string[];
+        granular_scopes?: Array<{ scope: string; target_ids?: string[] }>;
+      };
+    }>(
+      `/debug_token?input_token=${encodeURIComponent(tokenResult.access_token)}&access_token=${encodeURIComponent(appAccessToken)}`,
+    );
+
+    const scopes = debug.data.scopes ?? [];
+    const hasMessagingScope = scopes.some((scope) =>
+      [
+        "instagram_manage_messages",
+        "pages_messaging",
+        "instagram_basic",
+        "instagram_manage_comments",
+      ].includes(scope),
+    );
+    if (!debug.data.is_valid || debug.data.app_id !== appId || !hasMessagingScope) {
+      res.status(403).json({ error: "Meta did not grant the required Instagram permissions." });
+      return;
+    }
+
+    // Resolve the Facebook Page and confirm the linked Instagram business account.
+    const pages = await graphJson<{
+      data: Array<{
+        id: string;
+        name?: string;
+        access_token?: string;
+        instagram_business_account?: { id: string };
+      }>;
+    }>(
+      `/me/accounts?fields=id,name,access_token,instagram_business_account`,
+      tokenResult.access_token,
+    );
+    const page = pages.data.find((item) => item.id === parsed.data.pageId);
+    if (!page) {
+      res.status(403).json({ error: "The selected Page does not belong to the granted Meta account." });
+      return;
+    }
+    const linkedIgId = page.instagram_business_account?.id;
+    if (!linkedIgId || linkedIgId !== parsed.data.instagramAccountId) {
+      res.status(403).json({
+        error: "The Instagram account is not linked to the selected Facebook Page.",
+      });
+      return;
+    }
+
+    // Prefer a long-lived page token for messaging when Meta returns one.
+    const tokenToStore = page.access_token || tokenResult.access_token;
+    const bakerId = (req as AuthenticatedRequest).bakerId!;
+    const encryptedToken = encryptSecret(tokenToStore, encryptionKey);
+    const tokenExpiresAt =
+      debug.data.expires_at && debug.data.expires_at > 0
+        ? new Date(debug.data.expires_at * 1_000)
+        : null;
+
+    const [existing] = await db
+      .select()
+      .from(metaConnectionsTable)
+      .where(eq(metaConnectionsTable.bakerId, bakerId))
+      .limit(1);
+
+    const mergedScopes = Array.from(
+      new Set([...(existing?.grantedScopes ?? []), ...scopes]),
+    );
+    const igFields = {
+      bakerId,
+      instagramPageId: parsed.data.pageId,
+      instagramAccountId: parsed.data.instagramAccountId,
+      instagramAccessTokenEncrypted: encryptedToken,
+      grantedScopes: mergedScopes,
+      tokenExpiresAt: tokenExpiresAt ?? existing?.tokenExpiresAt ?? null,
+      lastVerifiedAt: new Date(),
+      status: "connected",
+      metadata: {
+        ...((existing?.metadata as Record<string, unknown> | null) ?? {}),
+        instagramPageName: page.name ?? null,
+      },
+    };
+
+    const [connection] = existing
+      ? await db
+          .update(metaConnectionsTable)
+          .set(igFields)
+          .where(eq(metaConnectionsTable.bakerId, bakerId))
+          .returning()
+      : await db.insert(metaConnectionsTable).values(igFields).returning();
+
+    res.json({
+      connected: true,
+      pageId: connection.instagramPageId,
+      accountId: connection.instagramAccountId,
+      pageName: page.name ?? null,
+    });
+  },
+);
+
 export default router;

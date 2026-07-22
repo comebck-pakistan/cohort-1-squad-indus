@@ -8,11 +8,14 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import {
   useGetBakerAnalytics,
   useGetOrderSources,
+  useListCustomers,
   getGetBakerAnalyticsQueryKey,
   getGetOrderSourcesQueryKey,
+  getListCustomersQueryKey,
 } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
 import { Users, Megaphone, Sparkles, Percent, Calendar, Heart, Send, CheckCircle } from "lucide-react";
+import { customFetch } from "@workspace/api-client-react";
 
 type Period = "daily" | "weekly" | "monthly";
 type Tab = "sales" | "marketing";
@@ -25,41 +28,64 @@ const PERIODS: { id: Period; label: string }[] = [
 
 const SOURCE_COLORS = ["#4A0E8F", "#F5C518", "#E879A9", "#6B7280"];
 
-const SEGMENTS = [
-  {
-    id: "frequent_buyers",
-    name: "Loyal Custom Buyers",
-    description: "Ordered custom cakes 2+ times in the last 60 days.",
-    count: 24,
-    templates: {
-      launch: "Salam! We just launched our premium Salted Caramel Fudge cake! Since you love our custom treats, get an exclusive early-bird taste. Reply to order!",
-      discount: "Hi there! To thank you for being a loyal customer, here is a special 15% discount code: LOYAL15 for your next custom order!",
-      festival: "Eid Mubarak! Celebrate Eid with Sana's customized festival platters. Pre-book your delivery today and get free delivery!"
-    }
-  },
-  {
-    id: "inactive_loyalists",
-    name: "We Miss You (Inactive)",
-    description: "Ordered 2+ times before, but inactive for over 30 days.",
-    count: 15,
-    templates: {
-      launch: "Salam! We haven't heard from you in a while. We just launched our summer mango desserts! Try them out today.",
-      discount: "Hi! We miss your orders. Here is a special 'Welcome Back' 20% discount code: WE_MISS_YOU on your next cake order!",
-      festival: "Happy Independence Day! Commemorate the holiday with our signature green-and-white theme cupcakes. Place your order now!"
-    }
-  },
-  {
-    id: "festival_buyers",
-    name: "Seasonal / Festival Buyers",
-    description: "Only order during major holidays (Eid, Independence Day).",
-    count: 42,
-    templates: {
-      launch: "Salam! Planning your next holiday gathering? Check out our brand new custom dessert table setups!",
-      discount: "Salam! Get ready for the festive season with 10% off on all pre-orders using code: FESTIVAL10.",
-      festival: "Eid Mubarak from Sana's Studio! Make this Eid sweeter with our handmade macarons and custom cakes. Pre-book yours today!"
-    }
-  }
-];
+const REALTIME_MS = 10_000;
+
+type CampaignSegment = {
+  id: string;
+  name: string;
+  description: string;
+  count: number;
+  templates: {
+    launch: string;
+    discount: string;
+    festival: string;
+  };
+};
+
+function buildCampaignSegments(
+  customers: Array<{ isRegular: boolean; isAtRisk: boolean; totalOrders: number }>,
+  bakeryName: string,
+): CampaignSegment[] {
+  const loyal = customers.filter((c) => c.isRegular && !c.isAtRisk);
+  const inactive = customers.filter((c) => c.isAtRisk);
+  const occasional = customers.filter((c) => !c.isRegular && !c.isAtRisk && c.totalOrders > 0);
+
+  return [
+    {
+      id: "frequent_buyers",
+      name: "Loyal Custom Buyers",
+      description: "Regular customers who ordered recently.",
+      count: loyal.length,
+      templates: {
+        launch: `Salam! We just launched a new item at ${bakeryName}! Since you love our treats, reply to pre-order.`,
+        discount: `Hi! Thank you for being a loyal ${bakeryName} customer — use LOYAL15 for 15% off your next order.`,
+        festival: `Eid Mubarak from ${bakeryName}! Pre-book festival platters today for free delivery.`,
+      },
+    },
+    {
+      id: "inactive_loyalists",
+      name: "We Miss You (Inactive)",
+      description: "Past buyers who have not ordered in 30+ days.",
+      count: inactive.length,
+      templates: {
+        launch: `Salam from ${bakeryName}! We miss you — try our latest seasonal menu this week.`,
+        discount: `Welcome back to ${bakeryName}! Use WEMISSYOU for 20% off your next order.`,
+        festival: `Happy holidays from ${bakeryName}! Celebrate with our limited festival boxes.`,
+      },
+    },
+    {
+      id: "festival_buyers",
+      name: "Occasional / Festival Buyers",
+      description: "Customers who order for special occasions.",
+      count: occasional.length,
+      templates: {
+        launch: `Salam! Planning your next gathering? ${bakeryName} now offers custom dessert tables.`,
+        discount: `Pre-order from ${bakeryName} with FESTIVAL10 for 10% off.`,
+        festival: `Eid Mubarak! ${bakeryName} is taking Eid orders — reply to reserve yours.`,
+      },
+    },
+  ];
+}
 
 export default function DashboardAnalytics() {
   const { bakerId } = useBuyerSession();
@@ -68,19 +94,58 @@ export default function DashboardAnalytics() {
   
   // Marketing Campaign State
   const [campaignModalOpen, setCampaignModalOpen] = useState(false);
-  const [selectedSegment, setSelectedSegment] = useState<typeof SEGMENTS[0] | null>(null);
+  const [selectedSegment, setSelectedSegment] = useState<CampaignSegment | null>(null);
   const [campaignType, setCampaignType] = useState<"launch" | "discount" | "festival">("launch");
   const [campaignMessage, setCampaignMessage] = useState("");
   const [campaignSentSuccess, setCampaignSentSuccess] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [broadcastError, setBroadcastError] = useState<string | null>(null);
+  const [testPhone, setTestPhone] = useState("");
+  const [lastBroadcastSummary, setLastBroadcastSummary] = useState<string | null>(null);
 
   const { data: analytics, isLoading } = useGetBakerAnalytics(bakerId, period, {
-    query: { enabled: !!bakerId, queryKey: getGetBakerAnalyticsQueryKey(bakerId, period) },
+    query: {
+      enabled: !!bakerId,
+      queryKey: getGetBakerAnalyticsQueryKey(bakerId, period),
+      refetchInterval: REALTIME_MS,
+    },
   });
 
   const { data: sources } = useGetOrderSources(bakerId, {
-    query: { enabled: !!bakerId, queryKey: getGetOrderSourcesQueryKey(bakerId) },
+    query: {
+      enabled: !!bakerId,
+      queryKey: getGetOrderSourcesQueryKey(bakerId),
+      refetchInterval: REALTIME_MS,
+    },
   });
+
+  const { data: customers = [] } = useListCustomers(
+    { bakerId },
+    {
+      query: {
+        enabled: !!bakerId,
+        queryKey: getListCustomersQueryKey({ bakerId }),
+        refetchInterval: REALTIME_MS,
+      },
+    },
+  );
+
+  const segments = buildCampaignSegments(customers, "your bakery");
+  const returningBuyers = customers.filter((c) => c.totalOrders > 1);
+  const repeatOrderRatio =
+    customers.length > 0
+      ? Math.round((returningBuyers.length / customers.length) * 1000) / 10
+      : 0;
+  const avgOrdersPerReturning =
+    returningBuyers.length > 0
+      ? Math.round(
+          (returningBuyers.reduce((sum, c) => sum + c.totalOrders, 0) / returningBuyers.length) * 10,
+        ) / 10
+      : 0;
+  const avgCustomerLifetimeValue =
+    customers.length > 0
+      ? Math.round(customers.reduce((sum, c) => sum + c.totalSpentPkr, 0) / customers.length)
+      : 0;
 
   const chartData = analytics?.dataPoints?.map((point) => ({
     label: format(parseISO(point.date), period === "daily" ? "EEE" : "MMM d"),
@@ -94,7 +159,7 @@ export default function DashboardAnalytics() {
     percentage: s.percentage,
   })) ?? [];
 
-  const handleOpenCampaign = (segment: typeof SEGMENTS[0]) => {
+  const handleOpenCampaign = (segment: CampaignSegment) => {
     setSelectedSegment(segment);
     setCampaignType("launch");
     setCampaignMessage(segment.templates.launch);
@@ -109,16 +174,71 @@ export default function DashboardAnalytics() {
     }
   };
 
-  const handleSendCampaign = () => {
+  const handleSendCampaign = async () => {
+    if (!bakerId || !campaignMessage.trim()) return;
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
+    setBroadcastError(null);
+    setLastBroadcastSummary(null);
+    try {
+      const result = await customFetch<{
+        sent: number;
+        failed: number;
+        targeted?: number;
+        mode: string;
+      }>(`/api/bakers/${bakerId}/broadcast`, {
+        method: "POST",
+        responseType: "json",
+        body: JSON.stringify({
+          message: campaignMessage.trim(),
+          limit: Math.min(selectedSegment?.count || 50, 50),
+        }),
+      });
+      setLastBroadcastSummary(
+        `Sent ${result.sent} of ${result.targeted ?? result.sent + result.failed} via WhatsApp (${result.failed} failed).`,
+      );
       setCampaignSentSuccess(true);
       setTimeout(() => {
         setCampaignModalOpen(false);
         setCampaignSentSuccess(false);
-      }, 2000);
-    }, 1500);
+      }, 2200);
+    } catch (cause) {
+      setBroadcastError(
+        cause instanceof Error
+          ? cause.message.replace(/^HTTP \d+\s*[^:]*:\s*/, "")
+          : "Broadcast failed. Connect WhatsApp in Agent Hub first.",
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSendTest = async () => {
+    if (!bakerId || !campaignMessage.trim() || !testPhone.trim()) return;
+    setBroadcastError(null);
+    try {
+      const result = await customFetch<{ sent: number; failed: number }>(
+        `/api/bakers/${bakerId}/broadcast`,
+        {
+          method: "POST",
+          responseType: "json",
+          body: JSON.stringify({
+            message: campaignMessage.trim(),
+            testPhone: testPhone.trim(),
+          }),
+        },
+      );
+      setLastBroadcastSummary(
+        result.sent
+          ? `Test message delivered to ${testPhone.trim()}.`
+          : `Test message failed for ${testPhone.trim()}.`,
+      );
+    } catch (cause) {
+      setBroadcastError(
+        cause instanceof Error
+          ? cause.message.replace(/^HTTP \d+\s*[^:]*:\s*/, "")
+          : "Test send failed. Connect WhatsApp in Agent Hub first.",
+      );
+    }
   };
 
   return (
@@ -368,15 +488,15 @@ export default function DashboardAnalytics() {
                     <div className="pt-4 border-t border-border/50 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Repeat Order Ratio</span>
-                        <span className="font-mono font-bold text-emerald-600">32.4%</span>
+                        <span className="font-mono font-bold text-emerald-600">{repeatOrderRatio}%</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Avg. Orders Per returning Buyer</span>
-                        <span className="font-mono font-bold">2.6 orders</span>
+                        <span className="font-mono font-bold">{avgOrdersPerReturning} orders</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-muted-foreground">Avg. Customer Lifetime Value</span>
-                        <span className="font-mono font-bold text-primary">PKR 8,400</span>
+                        <span className="font-mono font-bold text-primary">PKR {avgCustomerLifetimeValue.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -392,7 +512,7 @@ export default function DashboardAnalytics() {
                     </div>
 
                     <div className="space-y-4">
-                      {SEGMENTS.map((segment) => (
+                      {segments.map((segment) => (
                         <div key={segment.id} className="p-4 rounded-xl border border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-muted/40 transition-colors">
                           <div>
                             <div className="flex items-center gap-2">
@@ -513,17 +633,29 @@ export default function DashboardAnalytics() {
                     <div className="flex gap-2">
                       <input 
                         type="text"
+                        value={testPhone}
+                        onChange={(e) => setTestPhone(e.target.value)}
                         placeholder="e.g. +92 300 1234567"
                         className="flex-1 px-3 py-1.5 border border-border rounded-lg text-xs bg-background text-foreground"
                       />
-                      <button 
-                        type="button" 
-                        onClick={() => alert("Test broadcast sent successfully via mock WhatsApp API gateway!")}
-                        className="px-3 py-1.5 bg-secondary text-primary rounded-lg text-xs font-medium hover:bg-secondary/90 transition-colors cursor-pointer"
+                      <button
+                        type="button"
+                        onClick={() => void handleSendTest()}
+                        disabled={!campaignMessage.trim() || !testPhone.trim()}
+                        className="px-3 py-1.5 bg-secondary text-primary rounded-lg text-xs font-medium hover:bg-secondary/90 transition-colors cursor-pointer disabled:opacity-50"
                       >
                         Send Test
                       </button>
                     </div>
+                    {broadcastError && (
+                      <p role="alert" className="text-xs text-destructive">{broadcastError}</p>
+                    )}
+                    {lastBroadcastSummary && !broadcastError && (
+                      <p className="text-xs text-muted-foreground">{lastBroadcastSummary}</p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground">
+                      Requires a connected WhatsApp Business number in Agent Hub. Segment counts are estimates until live CRM filters ship.
+                    </p>
                   </div>
                 </div>
 

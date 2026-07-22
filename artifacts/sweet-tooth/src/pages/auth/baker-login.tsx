@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isClerkConfigured } from "@/lib/app-auth";
 import { useManagedBaker } from "@/lib/managed-auth";
 import { customFetch } from "@workspace/api-client-react";
 
 export default function BakerLogin({ initialTab = "login" }: { initialTab?: "login" | "register" }) {
   const [activeTab, setActiveTab] = useState<"login" | "register">(initialTab);
   const [, setLocation] = useLocation();
-  const [showClerkSSO, setShowClerkSSO] = useState(false);
+  const [showClerkSSO, setShowClerkSSO] = useState(isClerkConfigured());
   const { loginNatively } = useManagedBaker();
   
   const [email, setEmail] = useState("");
@@ -162,27 +163,29 @@ export default function BakerLogin({ initialTab = "login" }: { initialTab?: "log
                 </Button>
               </form>
 
-              {/* Optional Clerk Managed Auth toggle */}
-              <div className="pt-3 border-t border-border/60 text-center">
-                <button
-                  type="button"
-                  onClick={() => setShowClerkSSO(!showClerkSSO)}
-                  className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1"
-                >
-                  {showClerkSSO ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  {showClerkSSO ? "Hide Clerk Social Sign-In" : "Or Sign In with Clerk / Google"}
-                </button>
+              {isClerkConfigured() && (
+                <div className="pt-3 border-t border-border/60 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowClerkSSO(!showClerkSSO)}
+                    className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    {showClerkSSO ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    {showClerkSSO ? "Hide Google sign-in" : "Or sign in with Google"}
+                  </button>
 
-                {showClerkSSO && (
-                  <div className="mt-3 flex justify-center">
-                    <SignIn
-                      routing="hash"
-                      fallbackRedirectUrl="/dashboard"
-                      signUpUrl="/dashboard/register"
-                    />
-                  </div>
-                )}
-              </div>
+                  {showClerkSSO && (
+                    <div className="mt-3 flex justify-center">
+                      <SignIn
+                        routing="hash"
+                        forceRedirectUrl="/dashboard"
+                        fallbackRedirectUrl="/dashboard"
+                        signUpUrl="/dashboard/register"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="register" className="space-y-4 focus-visible:outline-none">
@@ -280,27 +283,29 @@ export default function BakerLogin({ initialTab = "login" }: { initialTab?: "log
                 </Button>
               </form>
 
-              {/* Optional Clerk Managed Register toggle */}
-              <div className="pt-3 border-t border-border/60 text-center">
-                <button
-                  type="button"
-                  onClick={() => setShowClerkSSO(!showClerkSSO)}
-                  className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1"
-                >
-                  {showClerkSSO ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  {showClerkSSO ? "Hide Clerk Social Sign-Up" : "Or Register with Clerk / Google"}
-                </button>
+              {isClerkConfigured() && (
+                <div className="pt-3 border-t border-border/60 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowClerkSSO(!showClerkSSO)}
+                    className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1"
+                  >
+                    {showClerkSSO ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    {showClerkSSO ? "Hide Google sign-up" : "Or register with Google"}
+                  </button>
 
-                {showClerkSSO && (
-                  <div className="mt-3 flex justify-center">
-                    <SignUp
-                      routing="hash"
-                      fallbackRedirectUrl="/dashboard/onboarding"
-                      signInUrl="/dashboard/login"
-                    />
-                  </div>
-                )}
-              </div>
+                  {showClerkSSO && (
+                    <div className="mt-3 flex justify-center">
+                      <SignUp
+                        routing="hash"
+                        forceRedirectUrl="/dashboard/onboarding"
+                        fallbackRedirectUrl="/dashboard/onboarding"
+                        signInUrl="/dashboard/login"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>

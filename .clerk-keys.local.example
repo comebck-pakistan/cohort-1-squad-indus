@@ -1,0 +1,9 @@
+# Copy to .clerk-keys.local (gitignored) and run: .\scripts\sync-clerk-vercel.ps1
+# Never commit real keys.
+
+CLERK_PUBLISHABLE_KEY=pk_live_REPLACE_ME
+CLERK_SECRET_KEY=sk_live_REPLACE_ME
+
+# Optional overrides (defaults match cohort production)
+# FRONTEND_URL=https://cohort-1-squad-indus-sweet-tooth.vercel.app
+# AUTH_MODE=clerk

@@ -12,6 +12,7 @@ import {
 import { sql } from "drizzle-orm";
 import { reindexBakerKnowledge } from "./lib/rag/indexer.js";
 import { hashPassword } from "./lib/auth.js";
+import { seedBakerDemoData, syncBakerStats } from "./lib/seed-baker-demo.js";
 
 async function seed() {
   console.log("Seeding Sweet Tooth database...");
@@ -29,7 +30,7 @@ async function seed() {
     area: "Gulberg",
     whatsappNumber: "+923001234567",
     email: "sana@studio.com",
-    passwordHash: hashPassword("sana123"),
+    passwordHash: hashPassword("SanaSweet2026!"),
     deliveryAreas: ["Gulberg", "Model Town", "DHA Phase 1", "DHA Phase 2", "Johar Town"],
     codPolicy: "Cash on delivery only. 50% advance for custom orders above PKR 5,000. Full payment on delivery for standard orders.",
     returnPolicy: "Quality issue? Contact me within 2 hours of delivery. I'll make it right.",
@@ -53,7 +54,7 @@ async function seed() {
     area: "Clifton",
     whatsappNumber: "+923219876543",
     email: "fatima@cakery.com",
-    passwordHash: hashPassword("fatima123"),
+    passwordHash: hashPassword("FatimaCake2026!"),
     deliveryAreas: ["Clifton", "Defence", "Bahadurabad", "Gulshan-e-Iqbal"],
     codPolicy: "COD available. Custom cakes require 30% advance payment.",
     returnPolicy: "Freshness guaranteed. Report issues within 1 hour of delivery.",
@@ -76,7 +77,7 @@ async function seed() {
     area: "F-7",
     whatsappNumber: "+923115554321",
     email: "amna@bakes.com",
-    passwordHash: hashPassword("amna123"),
+    passwordHash: hashPassword("AmnaBakes2026!"),
     deliveryAreas: ["F-7", "F-8", "G-9", "G-11", "Blue Area"],
     codPolicy: "Cash on delivery for all orders.",
     returnPolicy: "Quality guarantee on all products.",
@@ -230,7 +231,7 @@ async function seed() {
   ]).returning();
 
   // --- Products for Fatima ---
-  await db.insert(productsTable).values([
+  const fatimaProducts = await db.insert(productsTable).values([
     {
       bakerId: fatima.id,
       name: "Fondant Wedding Cake",
@@ -276,10 +277,9 @@ async function seed() {
       isTopRated: false,
       displayOrder: 2,
     },
-  ]);
+  ]).returning();
 
-  // --- Products for Amna ---
-  await db.insert(productsTable).values([
+  const amnaProducts = await db.insert(productsTable).values([
     {
       bakerId: amna.id,
       name: "Chocolate Chip Cookies",
@@ -321,7 +321,7 @@ async function seed() {
       isTopRated: true,
       displayOrder: 2,
     },
-  ]);
+  ]).returning();
 
   console.log("Products seeded");
 
@@ -547,7 +547,81 @@ async function seed() {
       specialInstructions: null,
       createdAt: daysAgo(1),
     },
+    {
+      bakerId: sana.id,
+      buyerId: hira.id,
+      buyerName: "Hira Tariq",
+      buyerWhatsapp: "+923003333333",
+      buyerAddress: "32-A, Model Town Extension, Lahore",
+      buyerArea: "Model Town",
+      items: orderItems2,
+      totalPkr: 2200,
+      deliveryDate: makeDate(-2),
+      status: "cancelled",
+      paymentStatus: "pending",
+      source: "marketplace",
+      occasion: null,
+      specialInstructions: null,
+      cancellationReason: "Customer rescheduled party",
+      cancelledBy: "customer",
+      cancelledAt: daysAgo(4),
+      createdAt: daysAgo(4),
+    },
+    {
+      bakerId: sana.id,
+      buyerId: ayesha.id,
+      buyerName: "Ayesha Raza",
+      buyerWhatsapp: "+923001111111",
+      buyerAddress: "House 45, Block C, Gulberg III, Lahore",
+      buyerArea: "Gulberg",
+      items: orderItems5,
+      totalPkr: 5800,
+      deliveryDate: makeDate(-30),
+      status: "delivered",
+      paymentStatus: "paid",
+      source: "instagram_dm",
+      occasion: "Eid",
+      specialInstructions: null,
+      createdAt: daysAgo(55),
+    },
+    {
+      bakerId: sana.id,
+      buyerId: zara.id,
+      buyerName: "Zara Khan",
+      buyerWhatsapp: "+923005555555",
+      buyerAddress: "Flat 8, Pearl Residency, DHA Phase 2, Lahore",
+      buyerArea: "DHA Phase 2",
+      items: orderItems3,
+      totalPkr: 5300,
+      deliveryDate: makeDate(-45),
+      status: "delivered",
+      paymentStatus: "paid",
+      source: "baker_whatsapp",
+      occasion: "Party",
+      specialInstructions: null,
+      createdAt: daysAgo(72),
+    },
   ]);
+
+  await seedBakerDemoData({
+    id: fatima.id,
+    businessName: fatima.businessName,
+    ownerName: fatima.ownerName,
+    city: "Karachi",
+    areas: ["Clifton", "Defence", "Bahadurabad", "Gulshan-e-Iqbal"],
+    products: fatimaProducts.map((p) => ({ id: p.id, name: p.name, basePricePkr: p.basePricePkr })),
+    phoneBase: "+92321876",
+  });
+
+  await seedBakerDemoData({
+    id: amna.id,
+    businessName: amna.businessName,
+    ownerName: amna.ownerName,
+    city: "Islamabad",
+    areas: ["F-7", "F-8", "G-9", "Blue Area"],
+    products: amnaProducts.map((p) => ({ id: p.id, name: p.name, basePricePkr: p.basePricePkr })),
+    phoneBase: "+92311555",
+  });
 
   console.log("Orders seeded");
 
@@ -636,14 +710,35 @@ async function seed() {
     console.log(`RAG indexed ${indexed.chunks} chunks for ${baker.businessName} (${indexed.provider})`);
   }
 
-  await db.insert(bakerGoalsTable).values({
-    bakerId: sana.id,
-    label: "Monthly orders",
-    metric: "orders",
-    targetValue: 50,
-    period: "monthly",
-  });
-  console.log("Default baker goal seeded for Sana's Sweet Studio");
+  await db.insert(bakerGoalsTable).values([
+    {
+      bakerId: sana.id,
+      label: "Monthly orders",
+      metric: "orders",
+      targetValue: 50,
+      period: "monthly",
+    },
+    {
+      bakerId: fatima.id,
+      label: "Monthly orders",
+      metric: "orders",
+      targetValue: 40,
+      period: "monthly",
+    },
+    {
+      bakerId: amna.id,
+      label: "Monthly orders",
+      metric: "orders",
+      targetValue: 35,
+      period: "monthly",
+    },
+  ]);
+  console.log("Baker goals seeded for all demo kitchens");
+
+  for (const baker of [sana, fatima, amna]) {
+    await syncBakerStats(baker.id);
+  }
+  console.log("Baker stats synced from live order/review counts");
 
   console.log("Seeding complete!");
 }

@@ -1,3 +1,5 @@
+import { customFetch } from "@workspace/api-client-react";
+
 export type WorkspaceGoal = {
   id: number;
   bakerId: number;
@@ -34,46 +36,44 @@ export type BakerWorkspace = {
   reminders: WorkspaceReminder[];
 };
 
-async function parseJson<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `Request failed (${response.status})`);
-  }
-  return response.json() as Promise<T>;
-}
-
 export async function getBakerWorkspace(bakerId: number): Promise<BakerWorkspace> {
-  return parseJson(await fetch(`/api/bakers/${bakerId}/workspace`));
+  return customFetch<BakerWorkspace>(`/api/bakers/${bakerId}/workspace`, {
+    responseType: "json",
+  });
 }
 
 export async function createBakerGoal(bakerId: number, data: { label: string; targetValue: number; metric?: string }) {
-  return parseJson(await fetch(`/api/bakers/${bakerId}/goals`, {
+  return customFetch(`/api/bakers/${bakerId}/goals`, {
     method: "POST",
+    responseType: "json",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  }));
+  });
 }
 
 export async function createBakerNote(bakerId: number, content: string) {
-  return parseJson(await fetch(`/api/bakers/${bakerId}/notes`, {
+  return customFetch(`/api/bakers/${bakerId}/notes`, {
     method: "POST",
+    responseType: "json",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content }),
-  }));
+  });
 }
 
 export async function createBakerReminder(bakerId: number, data: { title: string; dueAt: string }) {
-  return parseJson(await fetch(`/api/bakers/${bakerId}/reminders`, {
+  return customFetch(`/api/bakers/${bakerId}/reminders`, {
     method: "POST",
+    responseType: "json",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  }));
+  });
 }
 
 export async function updateBakerReminder(bakerId: number, reminderId: number, done: boolean) {
-  return parseJson(await fetch(`/api/bakers/${bakerId}/reminders/${reminderId}`, {
+  return customFetch(`/api/bakers/${bakerId}/reminders/${reminderId}`, {
     method: "PATCH",
+    responseType: "json",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ done }),
-  }));
+  });
 }

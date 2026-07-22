@@ -1,10 +1,10 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import type { ComponentType } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useAuth } from "@clerk/react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setBaseUrl } from "@workspace/api-client-react";
+import { useAppAuth } from "@/lib/app-auth";
 import {
   ManagedAuthProvider,
   useManagedBaker,
@@ -22,6 +22,7 @@ if (apiUrl) {
 import Home from "@/pages/buyer/home";
 import Contact from "@/pages/contact";
 import BakerProfile from "@/pages/buyer/baker-profile";
+import Bakers from "@/pages/buyer/bakers";
 import Cart from "@/pages/buyer/cart";
 import BuyerOrders from "@/pages/buyer/orders";
 
@@ -44,7 +45,7 @@ import NotFound from "@/pages/not-found";
 const queryClient = new QueryClient();
 
 function ProtectedDashboard({ component: Component }: { component: ComponentType }) {
-  const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
+  const { isLoaded: clerkLoaded, isSignedIn } = useAppAuth();
   const managed = useManagedBaker();
 
   if (managed.hasNativeSession) {
@@ -70,6 +71,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/contact" component={Contact} />
+      <Route path="/bakers" component={Bakers} />
       <Route path="/menu/:id" component={BakerProfile} />
       <Route path="/bakers/:id" component={BakerProfile} />
       <Route path="/cart" component={Cart} />

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useAuth } from "@clerk/react";
 import { customFetch } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useManagedBaker } from "@/lib/managed-auth";
+import { useAppAuth } from "@/lib/app-auth";
 
 export default function BakerOnboarding() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useAppAuth();
   const managed = useManagedBaker();
   const [, navigate] = useLocation();
   const [form, setForm] = useState({

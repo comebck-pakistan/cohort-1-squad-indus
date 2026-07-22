@@ -6,28 +6,32 @@
 
 ## ✨ Key Features & Architecture
 
-### 1. 🔐 Clerk Authentication & Managed Sign-In / Sign-Up
-* **Flexible Authentication**: Supports both standard password credentials and seamless Clerk authentication for baker onboarding.
-* **Per-Baker Data Isolation**: Strict multi-tenant security ensuring each kitchen's catalog, customer memory, and sales stats remain completely isolated.
+### 1. 🔐 Baker authentication
+* **Native credentials** (email/phone + password) work without Clerk.
+* **Clerk SSO** is optional — only enabled when `VITE_CLERK_PUBLISHABLE_KEY` / API Clerk secrets are set for the deployment domain. See **[docs/CLERK_SETUP.md](docs/CLERK_SETUP.md)** for Google sign-in on Vercel.
+* **Per-baker data isolation** for catalog, customers, and orders.
 
-### 2. 📱 Omnichannel Meta Webhooks (Instagram & WhatsApp)
-* **Instagram Direct Messages**: Real-time webhook listener (`/api/webhooks/instagram`) for auto-replying to customer DMs.
-* **WhatsApp Embedded Signup**: Built-in Meta Connect integration for onboarding business phone numbers directly from the Baker Dashboard.
-* **QuickTalk Chips**: Interactive quick-response chips for instant menu, price, and order status inquiries.
+### 2. 📱 Omnichannel Meta (Instagram & WhatsApp)
+* Webhooks: `/api/webhooks/whatsapp`, `/api/webhooks/instagram`.
+* **WhatsApp Embedded Signup** + **Instagram Meta connect** in Agent Hub (requires Meta app env vars).
+* Tokens are encrypted per bakery (`TOKEN_ENCRYPTION_KEY`).
 
-### 3. 🔍 Automated OCR Payment Slip Verification
-* **Zero Manual Ledger Checks**: Built-in vision analyzer (`receipt-analyzer.ts`) scans payment screenshots (Easypaisa, JazzCash, Bank Transfers).
-* **Automatic Verification**: Matches transfer amounts and destination accounts, updates order status to "Paid", and alerts the AI assistant.
+### 3. 🔍 OCR payment slip review (advisory)
+* Bakers paste a receipt image URL on Payments and run **Check receipt**.
+* OCR matches amount/recipient signals for **manual review only** — it never auto-marks paid.
 
-### 4. 🧠 Smart AI Assistant & RAG Memory Engine
-* **24/7 Smart Bot**: Auto-answers questions regarding eggless availability, nut allergies, delivery areas, and custom cake lead times.
-* **Customer Memory**: Remembers past buyer preferences (allergies, favorite cakes, delivery locations) to provide personalized greetings on return.
-* **Auto-Reindexing**: Updating catalog prices or toggling stock availability instantly rebuilds the vector knowledge index.
+### 4. 🧠 Smart AI assistant & RAG memory
+* Rule-based replies first; RAG fallback for catalog/policy questions.
+* Conversation memory + knowledge reindex after catalog/policy changes.
 
-### 5. 📊 Analytics & Customer Retention Hub
-* **Performance Charts**: Filter revenue and order volume by daily, weekly, and monthly views.
-* **Customer Retention Stats**: Track repeat customer ratios, average customer lifetime value (CLV), and price band trends.
-* **Smart Marketing Campaigns**: One-click broadcast templates (New Mango Launches, Welcoming Discounts, Eid/Festival Greetings) targeted at specific customer segments.
+### 5. 📊 Analytics & outreach
+* Revenue/order charts and retention stats.
+* WhatsApp broadcasts send through the bakery’s connected Meta number (not a mock gateway).
+
+### Ordering model
+* Menus can hand off to WhatsApp/Instagram, or use the web assistant.
+* **Guest web checkout** is available (`/cart`) with server-side price verification.
+* Buyers can look up order status by WhatsApp number on `/orders`.
 
 ---
 
@@ -52,12 +56,13 @@ Sweet-Tooth/
 ## 🚀 Quick Start (Local Setup)
 
 ### 1. Prerequisites & Environment Variables
-Copy `.env.example` to `.env` and set your credentials:
-```bash
-DATABASE_URL=postgresql://postgres.tnoyspplfqalgtbskwgy:[PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
-PORT=8080
-PUBLIC_API_URL=http://localhost:8080
-```
+API: copy `artifacts/api-server/.env.example` → `.env` (or set on Vercel).
+Frontend: copy `artifacts/sweet-tooth/.env.example` and set at least `VITE_API_URL`.
+
+Meta connect also needs on the API: `META_APP_ID`, `META_APP_SECRET`, `META_WEBHOOK_VERIFY_TOKEN`, `TOKEN_ENCRYPTION_KEY`.
+OCR hosts: `RECEIPT_IMAGE_HOSTS`.
+
+**Optional Google sign-in:** follow [docs/CLERK_SETUP.md](docs/CLERK_SETUP.md), then run `.\scripts\sync-clerk-vercel.ps1`.
 
 ### 2. Install Dependencies & Build
 ```bash

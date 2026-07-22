@@ -6,19 +6,24 @@ import {
   useListConversations,
   useGetChatHistory,
   useReindexBakerKnowledge,
+  useGetBaker,
   getGetAgentConfigQueryKey,
   getListConversationsQueryKey,
   getGetChatHistoryQueryKey,
 } from "@workspace/api-client-react";
+import { AgentPlayground } from "@/components/dashboard/agent-playground";
+import { Link } from "wouter";
 import type { KnowledgeReindexResult } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
 import { WhatsAppEmbeddedSignup } from "@/components/whatsapp-embedded-signup";
+import { InstagramMetaConnect } from "@/components/instagram-meta-connect";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   Bot, MessageSquare, Instagram, Phone, ChevronRight,
   Plus, X, Save, AlertTriangle, CheckCircle, Zap,
-  Eye, Settings, Users, ArrowLeft, Database, RefreshCw,
+  Settings, Users, ArrowLeft, Database, RefreshCw,
+  ExternalLink, Sparkles,
 } from "lucide-react";
 
 type Tab = "built-in" | "whatsapp" | "instagram" | "conversations";
@@ -50,13 +55,17 @@ export default function AgentHub() {
     },
   });
 
-  const { data: config, isLoading: configLoading } = useGetAgentConfig(bakerId, {
+  const { data: baker } = useGetBaker(bakerId, {
+    query: { enabled: !!bakerId, queryKey: ["baker", bakerId] },
+  });
+
+  const { data: config } = useGetAgentConfig(bakerId, {
     query: { enabled: !!bakerId, queryKey: getGetAgentConfigQueryKey(bakerId) },
   });
 
   const { data: conversations } = useListConversations(bakerId, {
     query: {
-      enabled: !!bakerId && activeTab === "conversations",
+      enabled: !!bakerId,
       queryKey: getListConversationsQueryKey(bakerId),
       refetchInterval: 5000,
     },
@@ -172,9 +181,32 @@ export default function AgentHub() {
   return (
     <DashboardLayout>
       <div className="p-8 max-w-4xl">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-4xl font-bold font-serif text-primary">Agent Hub</h1>
-          <p className="text-muted-foreground mt-1">Control your AI agents, see every conversation, and teach the bot your rules.</p>
+          <p className="text-muted-foreground mt-1">Control your AI agents, test replies live, and teach the bot your menu + policies.</p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <StatusPill
+            label="Built-in agent"
+            value={merged.agentActive !== false ? "On" : "Off"}
+            ok={merged.agentActive !== false}
+          />
+          <StatusPill
+            label="Conversations"
+            value={String(conversations?.length ?? 0)}
+            ok={(conversations?.length ?? 0) > 0}
+          />
+          <StatusPill
+            label="WhatsApp"
+            value={merged.whatsappAgentEnabled ? "Connected" : "Not set up"}
+            ok={!!merged.whatsappAgentEnabled}
+          />
+          <StatusPill
+            label="Custom rules"
+            value={String((merged.customResponses?.length ?? 0) + (merged.blockedTopics?.length ?? 0))}
+            ok={(merged.customResponses?.length ?? 0) > 0}
+          />
         </div>
 
         {/* Tab bar */}
@@ -201,6 +233,30 @@ export default function AgentHub() {
         {/* ── BUILT-IN AGENT ── */}
         {activeTab === "built-in" && (
           <div className="space-y-6">
+            {bakerId && (
+              <AgentPlayground bakerId={bakerId} bakeryName={baker?.businessName} />
+            )}
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5">
+              <div className="flex items-start gap-2 text-sm">
+                <Sparkles className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-muted-foreground">
+                  <strong className="text-foreground">Demo flow:</strong> tap a sample question above, then open{" "}
+                  <Link href={`/bakers/${bakerId}`} className="text-primary font-medium hover:underline">
+                    your public shop
+                  </Link>{" "}
+                  to show the same assistant on the buyer side.
+                </p>
+              </div>
+              <Link
+                href={`/bakers/${bakerId}`}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline shrink-0"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Buyer view
+              </Link>
+            </div>
+
             {/* Master toggle */}
             <div className="flex items-center justify-between p-5 rounded-xl border border-border bg-card shadow-sm">
               <div className="flex items-center gap-3">
@@ -501,9 +557,60 @@ export default function AgentHub() {
               <p className="text-xs text-muted-foreground">The shared app webhook is configured once by the platform owner; bakers never paste access tokens into this page.</p>
             </div>
 
-            <div className="p-5 rounded-xl border border-dashed border-border bg-muted/30 text-center">
-              <Phone className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-              <p className="text-sm text-muted-foreground">WhatsApp conversations will appear here once connected</p>
+            <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                Recent conversations
+              </h3>
+              {!conversations || conversations.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-center">
+                  <Phone className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+                  <p className="text-sm text-muted-foreground">
+                    No buyer conversations yet. Web and channel chats will show here once customers message your shop.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("conversations")}
+                    className="mt-3 text-sm font-medium text-primary hover:underline"
+                  >
+                    Open All Conversations
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {conversations.slice(0, 8).map((conv) => (
+                    <button
+                      key={conv.buyerId}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBuyerId(conv.buyerId);
+                        setActiveTab("conversations");
+                      }}
+                      className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors text-left"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold shrink-0">
+                        {conv.buyerName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{conv.buyerName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground shrink-0">
+                        {format(new Date(conv.lastActiveAt), "MMM d")}
+                      </p>
+                    </button>
+                  ))}
+                  {conversations.length > 8 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("conversations")}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      View all {conversations.length} conversations
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -530,15 +637,27 @@ export default function AgentHub() {
             </div>
 
             <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-4">
+              <h3 className="font-semibold flex items-center gap-2"><Settings className="w-4 h-4 text-muted-foreground" />Connect with Meta</h3>
+              <div className="p-4 bg-pink-50 border border-pink-200 rounded-lg text-sm text-pink-800 space-y-1">
+                <p className="font-medium">Secure Instagram Messaging onboarding:</p>
+                <ol className="list-decimal list-inside space-y-1 text-pink-700">
+                  <li>Connect with Facebook Login / Embedded Signup for the bakery Meta Business account.</li>
+                  <li>Select the Facebook Page linked to the Instagram Business account.</li>
+                  <li>Sweet Tooth verifies the Page ↔ Instagram link, encrypts the token, and stores the connection.</li>
+                  <li>Enable the agent toggle only after the connection shows as successful.</li>
+                </ol>
+              </div>
+              <InstagramMetaConnect />
+            </div>
+
+            <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-4">
               <h3 className="font-semibold flex items-center gap-2"><Settings className="w-4 h-4 text-muted-foreground" />Instagram Page Setup</h3>
               <div className="p-4 bg-pink-50 border border-pink-200 rounded-lg text-sm text-pink-800 space-y-1">
-                <p className="font-medium">How to connect Instagram:</p>
+                <p className="font-medium">Manual Page ID (optional fallback):</p>
                 <ol className="list-decimal list-inside space-y-1 text-pink-700">
                   <li>Convert to an <strong>Instagram Business or Creator account</strong></li>
                   <li>Link it to a <strong>Facebook Page</strong> in Meta Business Suite</li>
-                  <li>Go to <strong>Meta for Developers</strong> → Instagram → Messenger API for Instagram</li>
-                  <li>Copy your <strong>Instagram Page ID</strong> and paste below</li>
-                  <li>Complete Meta webhook, access-token, and messaging-permission setup before enabling live DM replies</li>
+                  <li>Paste the <strong>Instagram Page ID</strong> below if you need it on the baker profile</li>
                 </ol>
               </div>
               <div className="space-y-2">
@@ -655,5 +774,14 @@ export default function AgentHub() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function StatusPill({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${ok ? "border-green-200 bg-green-50/60" : "border-border bg-card"}`}>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`text-sm font-semibold mt-0.5 ${ok ? "text-green-700" : "text-foreground"}`}>{value}</p>
+    </div>
   );
 }

@@ -1004,6 +1004,22 @@ components:
           properties:
             instagram: { type: string, format: uri }
             facebook: { type: string, format: uri }
+        drops:
+          type: array
+          description: Flash drops stored in agentConfig (id, product title, release date).
+          items:
+            type: object
+            required: [id]
+            properties:
+              id: { type: string }
+              productId: { type: integer }
+              productName: { type: string }
+              title: { type: string }
+              releaseDate: { type: string, format: date }
+              date: { type: string, format: date }
+              releaseTime: { type: string }
+              limitStock: { type: integer }
+              active: { type: boolean }
 
     BakerStats:
       type: object

@@ -14,6 +14,8 @@ import workspaceRouter from "./workspace.js";
 import whatsappRouter from "./whatsapp.js";
 import instagramRouter from "./instagram.js";
 import metaConnectRouter from "./meta-connect.js";
+import broadcastRouter from "./broadcast.js";
+import adminRouter from "./admin.js";
 
 const router = Router();
 
@@ -32,5 +34,7 @@ router.use(workspaceRouter);
 router.use(whatsappRouter);
 router.use(instagramRouter);
 router.use(metaConnectRouter);
+router.use(broadcastRouter);
+router.use(adminRouter);
 
 export default router;

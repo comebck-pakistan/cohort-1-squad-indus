@@ -51460,6 +51460,7 @@ var CreateBakerResponse = objectType({
   "advanceThresholdPkr": numberType().optional(),
   "advancePercentage": numberType().optional(),
   "paymentDetails": stringType().optional(),
+  "blockedDates": arrayType(coerce.date()).optional(),
   "socialLinks": objectType({
     "instagram": stringType().url().optional(),
     "facebook": stringType().url().optional()
@@ -51500,6 +51501,7 @@ var LoginBakerResponse = objectType({
     "advanceThresholdPkr": numberType().optional(),
     "advancePercentage": numberType().optional(),
     "paymentDetails": stringType().optional(),
+    "blockedDates": arrayType(coerce.date()).optional(),
     "socialLinks": objectType({
       "instagram": stringType().url().optional(),
       "facebook": stringType().url().optional()
@@ -51538,6 +51540,7 @@ var GetBakerResponse = objectType({
   "advanceThresholdPkr": numberType().optional(),
   "advancePercentage": numberType().optional(),
   "paymentDetails": stringType().optional(),
+  "blockedDates": arrayType(coerce.date()).optional(),
   "socialLinks": objectType({
     "instagram": stringType().url().optional(),
     "facebook": stringType().url().optional()
@@ -51565,11 +51568,11 @@ var UpdateBakerBody = objectType({
   "advanceThresholdPkr": numberType().optional(),
   "advancePercentage": numberType().optional(),
   "paymentDetails": stringType().optional(),
+  "blockedDates": arrayType(coerce.date()).optional(),
   "socialLinks": objectType({
     "instagram": stringType().url().optional(),
     "facebook": stringType().url().optional()
-  }).optional(),
-  "blockedDates": arrayType(stringType()).optional()
+  }).optional()
 });
 var UpdateBakerResponse = objectType({
   "id": numberType(),
@@ -51599,6 +51602,7 @@ var UpdateBakerResponse = objectType({
   "advanceThresholdPkr": numberType().optional(),
   "advancePercentage": numberType().optional(),
   "paymentDetails": stringType().optional(),
+  "blockedDates": arrayType(coerce.date()).optional(),
   "socialLinks": objectType({
     "instagram": stringType().url().optional(),
     "facebook": stringType().url().optional()
@@ -71608,15 +71612,15 @@ function needsPasswordRehash(storedHash) {
 
 // src/middlewares/auth.ts
 function clerkIsRequired() {
-  if (process.env.AUTH_MODE === "legacy") return false;
-  return process.env.AUTH_MODE === "clerk" || process.env.NODE_ENV === "production";
+  return process.env.AUTH_MODE === "clerk-only";
 }
-function isRealClerkConfigured() {
-  const secretKey2 = process.env.CLERK_SECRET_KEY;
-  return Boolean(secretKey2 && !secretKey2.includes("sk_test_w3hP8z2K9x7Y6v5U4t3S2r1Q0p9O8n7M6l5K4j3I2h1"));
+function isClerkConfigured() {
+  return Boolean(
+    process.env.CLERK_SECRET_KEY && process.env.CLERK_PUBLISHABLE_KEY
+  );
 }
 function requireClerkUser(req, res, next) {
-  if (!isRealClerkConfigured()) {
+  if (!isClerkConfigured()) {
     res.status(503).json({ error: "Managed authentication is not configured." });
     return;
   }
@@ -71631,7 +71635,7 @@ function requireClerkUser(req, res, next) {
   next();
 }
 async function requireBakerAuth(req, res, next) {
-  if (isRealClerkConfigured() && process.env.AUTH_MODE !== "legacy") {
+  if (isClerkConfigured() && process.env.AUTH_MODE !== "legacy") {
     const auth = getAuth(req);
     if (!auth.userId) {
       res.status(401).json({ error: "Sign in is required." });
@@ -72035,7 +72039,7 @@ router2.post(
   }
 );
 router2.post("/bakers", rateLimit(10, 15 * 60 * 1e3), async (req, res) => {
-  if (process.env.AUTH_MODE !== "legacy" && (process.env.CLERK_SECRET_KEY || process.env.NODE_ENV === "production")) {
+  if (process.env.AUTH_MODE === "clerk-only") {
     res.status(410).json({ error: "Use managed sign-up to create a bakery account." });
     return;
   }
@@ -74943,10 +74947,9 @@ function ensureDatabase() {
 // src/app.ts
 await ensureDatabase();
 var app = (0, import_express19.default)();
-var publishableKey = process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xldmVyLWd1cHB5LTU5LmNsZXJrLmFjY291bnRzLmRldiQ";
+var publishableKey = process.env.CLERK_PUBLISHABLE_KEY;
 var secretKey = process.env.CLERK_SECRET_KEY;
-var isPlaceholderSecretKey = !secretKey || secretKey.includes("sk_test_w3hP8z2K9x7Y6v5U4t3S2r1Q0p9O8n7M6l5K4j3I2h1");
-if (secretKey && !isPlaceholderSecretKey) {
+if (publishableKey && secretKey) {
   app.use(clerkMiddleware({ publishableKey, secretKey }));
 }
 var allowedOrigins = new Set([

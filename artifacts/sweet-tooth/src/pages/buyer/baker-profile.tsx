@@ -10,9 +10,11 @@ import {
   getGetBakerReviewsQueryKey
 } from "@workspace/api-client-react";
 import { useParams } from "wouter";
-import { MessageCircle, X, Send, User, Star, Phone, Sparkles, Facebook, Instagram } from "lucide-react";
+import { MessageCircle, X, Send, User, Star, Phone, Sparkles, Facebook, Instagram, ShoppingBag } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { addGuestCartItem } from "@/pages/buyer/cart";
+import { Link } from "wouter";
 
 type PublicChatMessage = {
   id: string;
@@ -113,6 +115,26 @@ export default function BakerProfile() {
     }
     window.open(channelHandoff.href, "_blank", "noopener,noreferrer");
     toast({ title: "Instagram opened", description: `Message the bakery to order ${productName}.` });
+  };
+
+  const addProductToBag = (product: {
+    id: number;
+    name: string;
+    basePricePkr: number;
+    sizes?: Array<{ label: string; pricePkr: number }> | null;
+  }) => {
+    const sizeLabel = selectedSizes[product.id] ?? product.sizes?.[0]?.label ?? "Standard";
+    const matched = product.sizes?.find((s) => s.label === sizeLabel);
+    addGuestCartItem({
+      bakerId,
+      bakerName: baker?.businessName,
+      productId: product.id,
+      productName: product.name,
+      quantity: 1,
+      unitPricePkr: matched?.pricePkr ?? product.basePricePkr,
+      sizeLabel,
+    });
+    toast({ title: "Added to bag", description: `${product.name} is ready in your cart.` });
   };
 
   const whatsappChatUrl = (baker as { whatsappChatUrl?: string | null } | undefined)?.whatsappChatUrl;
@@ -254,6 +276,16 @@ export default function BakerProfile() {
                           <div className="flex justify-between items-center">
                             <span className="font-mono font-bold text-primary">PKR {displayPrice.toLocaleString()}</span>
                             <div className="flex gap-2">
+                              {useWebAssistant && product.isAvailable && (
+                                <button
+                                  onClick={() => addProductToBag(product)}
+                                  className="p-1.5 rounded-md text-primary border border-primary/20 hover:bg-primary/10"
+                                  aria-label={`Add ${product.name} to bag`}
+                                  title="Add to bag"
+                                >
+                                  <ShoppingBag className="w-4 h-4" />
+                                </button>
+                              )}
                               {baker.agentActive && useWebAssistant && product.isAvailable && (
                                 <button
                                   onClick={() => askAboutProduct(product.name)}

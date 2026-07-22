@@ -106,6 +106,18 @@ export type BakerUpdateSocialLinks = {
   facebook?: string;
 };
 
+export type BakerUpdateDrop = {
+  id: string;
+  productId?: number;
+  productName?: string;
+  title?: string;
+  releaseDate?: string;
+  date?: string;
+  releaseTime?: string;
+  limitStock?: number;
+  active?: boolean;
+};
+
 export interface BakerUpdate {
   businessName?: string;
   ownerName?: string;
@@ -126,6 +138,7 @@ export interface BakerUpdate {
   paymentDetails?: string;
   blockedDates?: string[];
   socialLinks?: BakerUpdateSocialLinks;
+  drops?: BakerUpdateDrop[];
 }
 
 export interface BakerStats {

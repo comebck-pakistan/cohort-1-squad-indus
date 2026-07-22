@@ -7,11 +7,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useAuth } from "@clerk/react";
 import {
   customFetch,
   setAuthTokenGetter,
 } from "@workspace/api-client-react";
+import { useAppAuth } from "@/lib/app-auth";
 
 type ClerkBakerSession = {
   needsOnboarding: boolean;
@@ -33,7 +33,7 @@ type ManagedBakerContextValue = {
 const ManagedBakerContext = createContext<ManagedBakerContextValue | null>(null);
 
 export function ManagedAuthProvider({ children }: { children: ReactNode }) {
-  const { getToken: getClerkToken, isLoaded: clerkLoaded, isSignedIn: clerkSignedIn } = useAuth();
+  const { getToken: getClerkToken, isLoaded: clerkLoaded, isSignedIn: clerkSignedIn } = useAppAuth();
   
   const [nativeToken, setNativeToken] = useState<string | null>(() => 
     typeof window !== "undefined" ? localStorage.getItem("baker_token") : null

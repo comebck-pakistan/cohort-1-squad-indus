@@ -323,7 +323,18 @@ export const UpdateBakerBody = zod.object({
   "socialLinks": zod.object({
   "instagram": zod.string().url().optional(),
   "facebook": zod.string().url().optional()
-}).optional()
+}).optional(),
+  "drops": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.number().optional(),
+  "productName": zod.string().optional(),
+  "title": zod.string().optional(),
+  "releaseDate": zod.string().optional(),
+  "date": zod.string().optional(),
+  "releaseTime": zod.string().optional(),
+  "limitStock": zod.number().optional(),
+  "active": zod.boolean().optional()
+}).passthrough()).optional()
 })
 
 export const UpdateBakerResponse = zod.object({

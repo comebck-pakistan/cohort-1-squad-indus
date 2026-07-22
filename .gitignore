@@ -54,3 +54,7 @@ Thumbs.db
 
 .vercel
 .env*
+.env*.bak
+.clerk-keys.local
+.tmp-api.env
+artifacts/api-server/.env.production

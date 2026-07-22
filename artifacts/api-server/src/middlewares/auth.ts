@@ -42,37 +42,35 @@ export function requireClerkUser(req: Request, res: Response, next: NextFunction
 export async function requireBakerAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (isClerkConfigured() && process.env.AUTH_MODE !== "legacy") {
     const auth = getAuth(req);
-    if (!auth.userId) {
-      res.status(401).json({ error: "Sign in is required." });
+    if (auth.userId) {
+      const [baker] = auth.orgId
+        ? await db
+            .select({ id: bakersTable.id })
+            .from(bakersTable)
+            .where(eq(bakersTable.clerkOrganizationId, auth.orgId))
+            .limit(1)
+        : await db
+            .select({ id: bakersTable.id })
+            .from(bakersTable)
+            .where(eq(bakersTable.clerkUserId, auth.userId))
+            .limit(1);
+
+      if (!baker) {
+        res.status(403).json({
+          error: "Complete bakery onboarding before accessing the dashboard.",
+          code: "BAKER_ONBOARDING_REQUIRED",
+        });
+        return;
+      }
+
+      const request = req as AuthenticatedRequest;
+      request.bakerId = baker.id;
+      request.clerkUserId = auth.userId;
+      request.clerkOrganizationId = auth.orgId ?? undefined;
+      next();
       return;
     }
-
-    const [baker] = auth.orgId
-      ? await db
-          .select({ id: bakersTable.id })
-          .from(bakersTable)
-          .where(eq(bakersTable.clerkOrganizationId, auth.orgId))
-          .limit(1)
-      : await db
-          .select({ id: bakersTable.id })
-          .from(bakersTable)
-          .where(eq(bakersTable.clerkUserId, auth.userId))
-          .limit(1);
-
-    if (!baker) {
-      res.status(403).json({
-        error: "Complete bakery onboarding before accessing the dashboard.",
-        code: "BAKER_ONBOARDING_REQUIRED",
-      });
-      return;
-    }
-
-    const request = req as AuthenticatedRequest;
-    request.bakerId = baker.id;
-    request.clerkUserId = auth.userId;
-    request.clerkOrganizationId = auth.orgId ?? undefined;
-    next();
-    return;
+    // Clerk is configured but this request uses a native baker JWT — keep email/password login working.
   }
 
   if (clerkIsRequired()) {

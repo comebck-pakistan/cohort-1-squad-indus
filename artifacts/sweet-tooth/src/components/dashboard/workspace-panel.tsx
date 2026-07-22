@@ -24,6 +24,7 @@ export function DashboardWorkspace() {
     queryKey: ["baker-workspace", bakerId],
     queryFn: () => getBakerWorkspace(bakerId),
     enabled: !!bakerId,
+    refetchInterval: 10_000,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["baker-workspace", bakerId] });

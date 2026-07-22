@@ -1,13 +1,17 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useListOrders, useUpdateOrderStatus, getListOrdersQueryKey } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
+import { liveDashboardQuery, ORDERS_POLL_MS } from "@/lib/dashboard-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 
 export default function DashboardOrders() {
   const { bakerId } = useBuyerSession();
   const queryClient = useQueryClient();
-  const { data: orders, isLoading } = useListOrders({ bakerId }, { query: { enabled: !!bakerId, queryKey: getListOrdersQueryKey({ bakerId }), refetchInterval: 10000 } });
+  const { data: orders, isLoading } = useListOrders(
+    { bakerId },
+    { query: { enabled: !!bakerId, queryKey: getListOrdersQueryKey({ bakerId }), ...liveDashboardQuery(ORDERS_POLL_MS) } },
+  );
   const updateStatus = useUpdateOrderStatus();
 
   const handleStatusUpdate = (orderId: number, status: string) => {
@@ -30,7 +34,7 @@ export default function DashboardOrders() {
       <div className="p-8">
         <h1 className="text-4xl font-bold mb-8 font-serif text-primary">Order Pipeline</h1>
         
-        {isLoading ? (
+        {isLoading && !orders ? (
           <div className="animate-pulse space-y-4">
             <div className="h-12 bg-muted rounded-md w-full"></div>
             <div className="h-12 bg-muted rounded-md w-full"></div>

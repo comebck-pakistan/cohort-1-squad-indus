@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import {
@@ -5,13 +6,12 @@ import {
   useGetBakerStats,
   useListOrders,
   useListCustomers,
-  useListConversations,
   useGetAgentConfig,
   getListOrdersQueryKey,
   getListCustomersQueryKey,
 } from "@workspace/api-client-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { DashboardWorkspace } from "@/components/dashboard/workspace-panel";
+import { liveDashboardQuery, ORDERS_POLL_MS } from "@/lib/dashboard-query";
 import { useBuyerSession } from "@/hooks/use-session";
 import {
   ShoppingBag,
@@ -25,7 +25,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-const POLL_MS = 10_000;
+const DashboardWorkspace = lazy(() =>
+  import("@/components/dashboard/workspace-panel").then((m) => ({ default: m.DashboardWorkspace })),
+);
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -50,8 +52,8 @@ export default function DashboardHome() {
     query: { enabled: !!bakerId, queryKey: ["baker", bakerId] },
   });
 
-  const { data: stats, isLoading: statsLoading } = useGetBakerStats(bakerId, {
-    query: { enabled: !!bakerId, queryKey: ["baker-stats", bakerId], refetchInterval: POLL_MS },
+  const { data: stats } = useGetBakerStats(bakerId, {
+    query: { enabled: !!bakerId, queryKey: ["baker-stats", bakerId], ...liveDashboardQuery(ORDERS_POLL_MS) },
   });
 
   const { data: orders } = useListOrders(
@@ -60,7 +62,7 @@ export default function DashboardHome() {
       query: {
         enabled: !!bakerId,
         queryKey: getListOrdersQueryKey({ bakerId }),
-        refetchInterval: POLL_MS,
+        ...liveDashboardQuery(ORDERS_POLL_MS),
       },
     },
   );
@@ -71,14 +73,9 @@ export default function DashboardHome() {
       query: {
         enabled: !!bakerId,
         queryKey: getListCustomersQueryKey({ bakerId }),
-        refetchInterval: POLL_MS,
       },
     },
   );
-
-  const { data: conversations } = useListConversations(bakerId, {
-    query: { enabled: !!bakerId, queryKey: ["conversations", bakerId], refetchInterval: POLL_MS },
-  });
 
   const { data: agentConfig } = useGetAgentConfig(bakerId, {
     query: { enabled: !!bakerId, queryKey: ["agent-config", bakerId] },
@@ -146,32 +143,28 @@ export default function DashboardHome() {
           </Link>
         </div>
 
-        {statsLoading ? (
-          <div className="animate-pulse h-32 bg-muted rounded-xl" />
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Today's orders" value={String(stats?.todayOrders ?? 0)} icon={ShoppingBag} />
-            <StatCard
-              label="Today's revenue"
-              value={`PKR ${(stats?.todayRevenue ?? 0).toLocaleString()}`}
-              icon={DollarSign}
-              highlight
-            />
-            <StatCard
-              label="This week"
-              value={`${stats?.weekOrders ?? 0} orders`}
-              sub={`PKR ${(stats?.weekRevenue ?? 0).toLocaleString()}`}
-              icon={TrendingUp}
-            />
-            <StatCard
-              label="Agent"
-              value={agentConfig?.agentActive !== false && stats?.agentActive ? "Live" : "Paused"}
-              sub={`${conversations?.length ?? 0} conversations`}
-              icon={Bot}
-              valueClass={agentConfig?.agentActive !== false ? "text-green-600" : "text-amber-600"}
-            />
-          </div>
-        )}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Today's orders" value={String(stats?.todayOrders ?? 0)} icon={ShoppingBag} />
+          <StatCard
+            label="Today's revenue"
+            value={`PKR ${(stats?.todayRevenue ?? 0).toLocaleString()}`}
+            icon={DollarSign}
+            highlight
+          />
+          <StatCard
+            label="This week"
+            value={`${stats?.weekOrders ?? 0} orders`}
+            sub={`PKR ${(stats?.weekRevenue ?? 0).toLocaleString()}`}
+            icon={TrendingUp}
+          />
+          <StatCard
+            label="Agent"
+            value={agentConfig?.agentActive !== false && stats?.agentActive ? "Live" : "Paused"}
+            sub="WhatsApp assistant"
+            icon={Bot}
+            valueClass={agentConfig?.agentActive !== false ? "text-green-600" : "text-amber-600"}
+          />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <div className="lg:col-span-2 space-y-6">
@@ -274,7 +267,9 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        <DashboardWorkspace />
+        <Suspense fallback={<div className="mt-8 h-48 bg-muted/60 rounded-xl animate-pulse" />}>
+          <DashboardWorkspace />
+        </Suspense>
       </div>
     </DashboardLayout>
   );

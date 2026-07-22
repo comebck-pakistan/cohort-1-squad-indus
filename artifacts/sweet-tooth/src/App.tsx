@@ -1,6 +1,8 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import type { ComponentType } from "react";
+import { lazy, Suspense, type ComponentType } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { dashboardQueryDefaults } from "@/lib/dashboard-query";
+import { DashboardPageFallback } from "@/components/dashboard/dashboard-page-fallback";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setBaseUrl } from "@workspace/api-client-react";
@@ -27,47 +29,78 @@ import Cart from "@/pages/buyer/cart";
 import BuyerOrders from "@/pages/buyer/orders";
 import OrderFeedback from "@/pages/buyer/feedback";
 
-// Dashboard Pages
-import DashboardHome from "@/pages/dashboard/home";
-import DashboardOrders from "@/pages/dashboard/orders";
-import DashboardCatalog from "@/pages/dashboard/catalog";
-import DashboardAnalytics from "@/pages/dashboard/analytics";
-import DashboardSettings from "@/pages/dashboard/settings";
-import DashboardPayments from "@/pages/dashboard/payments";
-import DashboardCustomers from "@/pages/dashboard/customers";
-import DashboardCalendar from "@/pages/dashboard/calendar";
-import DashboardAgentHub from "@/pages/dashboard/agent-hub";
-import DashboardGuide from "@/pages/dashboard/guide";
-import DashboardKhata from "@/pages/dashboard/khata";
+// Dashboard pages — lazy-loaded so each tab opens fast without loading the whole app.
+const DashboardHome = lazy(() => import("@/pages/dashboard/home"));
+const DashboardOrders = lazy(() => import("@/pages/dashboard/orders"));
+const DashboardCatalog = lazy(() => import("@/pages/dashboard/catalog"));
+const DashboardAnalytics = lazy(() => import("@/pages/dashboard/analytics"));
+const DashboardSettings = lazy(() => import("@/pages/dashboard/settings"));
+const DashboardPayments = lazy(() => import("@/pages/dashboard/payments"));
+const DashboardCustomers = lazy(() => import("@/pages/dashboard/customers"));
+const DashboardCalendar = lazy(() => import("@/pages/dashboard/calendar"));
+const DashboardAgentHub = lazy(() => import("@/pages/dashboard/agent-hub"));
+const DashboardGuide = lazy(() => import("@/pages/dashboard/guide"));
+const DashboardKhata = lazy(() => import("@/pages/dashboard/khata"));
 import BakerLogin from "@/pages/auth/baker-login";
 import BakerRegister from "@/pages/auth/baker-register";
 import BakerOnboarding from "@/pages/auth/baker-onboarding";
 
 import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: dashboardQueryDefaults,
+  },
+});
 
 function ProtectedDashboard({ component: Component }: { component: ComponentType }) {
   const { isLoaded: clerkLoaded, isSignedIn } = useAppAuth();
   const managed = useManagedBaker();
 
   if (managed.hasNativeSession) {
-    return managed.bakerId ? <Component /> : <BakerOnboarding />;
+    return managed.bakerId ? (
+      <Suspense fallback={<DashboardPageFallback />}>
+        <Component />
+      </Suspense>
+    ) : (
+      <BakerOnboarding />
+    );
   }
 
-  // Clerk development instances cannot initialize on a production domain.
-  // Keep the native, hardened login available instead of hanging forever.
-  if (!clerkLoaded) return <BakerLogin />;
-  if (!managed.isLoaded) {
-    return <div className="min-h-screen bg-background px-6 py-20 text-center text-muted-foreground">Loading your secure session…</div>;
-  }
+  // Avoid flashing the login form while Clerk initializes — show a light shell instead.
+  if (!clerkLoaded) return <DashboardPageFallback />;
+  if (!managed.isLoaded) return <DashboardPageFallback />;
   if (!isSignedIn) return <BakerLogin />;
   if (managed.error) {
     return <div role="alert" className="min-h-screen bg-background px-6 py-20 text-center text-destructive">{managed.error}</div>;
   }
   if (managed.needsOnboarding) return <BakerOnboarding />;
-  return managed.bakerId ? <Component /> : <BakerOnboarding />;
+  return managed.bakerId ? (
+    <Suspense fallback={<DashboardPageFallback />}>
+      <Component />
+    </Suspense>
+  ) : (
+    <BakerOnboarding />
+  );
 }
+
+function dashboardRoute(Component: ComponentType) {
+  return function DashboardRoute() {
+    return <ProtectedDashboard component={Component} />;
+  };
+}
+
+const DashboardHomeRoute = dashboardRoute(DashboardHome);
+const DashboardOrdersRoute = dashboardRoute(DashboardOrders);
+const DashboardCatalogRoute = dashboardRoute(DashboardCatalog);
+const DashboardAnalyticsRoute = dashboardRoute(DashboardAnalytics);
+const DashboardSettingsRoute = dashboardRoute(DashboardSettings);
+const DashboardPaymentsRoute = dashboardRoute(DashboardPayments);
+const DashboardCustomersRoute = dashboardRoute(DashboardCustomers);
+const DashboardCalendarRoute = dashboardRoute(DashboardCalendar);
+const DashboardAgentHubRoute = dashboardRoute(DashboardAgentHub);
+const DashboardKhataRoute = dashboardRoute(DashboardKhata);
+const DashboardGuideRoute = dashboardRoute(DashboardGuide);
 
 function Router() {
   return (
@@ -81,17 +114,17 @@ function Router() {
       <Route path="/orders" component={BuyerOrders} />
       <Route path="/feedback/:orderId" component={OrderFeedback} />
 
-      <Route path="/dashboard" component={() => <ProtectedDashboard component={DashboardHome} />} />
-      <Route path="/dashboard/orders" component={() => <ProtectedDashboard component={DashboardOrders} />} />
-      <Route path="/dashboard/catalog" component={() => <ProtectedDashboard component={DashboardCatalog} />} />
-      <Route path="/dashboard/analytics" component={() => <ProtectedDashboard component={DashboardAnalytics} />} />
-      <Route path="/dashboard/settings" component={() => <ProtectedDashboard component={DashboardSettings} />} />
-      <Route path="/dashboard/payments" component={() => <ProtectedDashboard component={DashboardPayments} />} />
-      <Route path="/dashboard/customers" component={() => <ProtectedDashboard component={DashboardCustomers} />} />
-      <Route path="/dashboard/calendar" component={() => <ProtectedDashboard component={DashboardCalendar} />} />
-      <Route path="/dashboard/agent-hub" component={() => <ProtectedDashboard component={DashboardAgentHub} />} />
-      <Route path="/dashboard/khata" component={() => <ProtectedDashboard component={DashboardKhata} />} />
-      <Route path="/dashboard/guide" component={() => <ProtectedDashboard component={DashboardGuide} />} />
+      <Route path="/dashboard" component={DashboardHomeRoute} />
+      <Route path="/dashboard/orders" component={DashboardOrdersRoute} />
+      <Route path="/dashboard/catalog" component={DashboardCatalogRoute} />
+      <Route path="/dashboard/analytics" component={DashboardAnalyticsRoute} />
+      <Route path="/dashboard/settings" component={DashboardSettingsRoute} />
+      <Route path="/dashboard/payments" component={DashboardPaymentsRoute} />
+      <Route path="/dashboard/customers" component={DashboardCustomersRoute} />
+      <Route path="/dashboard/calendar" component={DashboardCalendarRoute} />
+      <Route path="/dashboard/agent-hub" component={DashboardAgentHubRoute} />
+      <Route path="/dashboard/khata" component={DashboardKhataRoute} />
+      <Route path="/dashboard/guide" component={DashboardGuideRoute} />
       <Route path="/dashboard/login" component={() => <BakerLogin />} />
       <Route path="/dashboard/register" component={BakerRegister} />
       <Route path="/dashboard/onboarding" component={BakerOnboarding} />

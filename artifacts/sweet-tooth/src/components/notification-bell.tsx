@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { NOTIFICATIONS_POLL_MS } from "@/lib/dashboard-query";
 
 const TYPE_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
   new_order: { icon: ShoppingBag, color: "text-blue-600 bg-blue-50" },
@@ -26,7 +27,8 @@ export function NotificationBell({ bakerId }: { bakerId: number }) {
     query: {
       enabled: !!bakerId,
       queryKey: getListNotificationsQueryKey(bakerId),
-      refetchInterval: 15000,
+      refetchInterval: NOTIFICATIONS_POLL_MS,
+      refetchIntervalInBackground: false,
     },
   });
 

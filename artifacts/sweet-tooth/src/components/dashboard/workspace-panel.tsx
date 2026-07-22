@@ -7,6 +7,7 @@ import {
   updateBakerReminder,
 } from "@/lib/workspace-api";
 import { useBuyerSession } from "@/hooks/use-session";
+import { NOTIFICATIONS_POLL_MS, WORKSPACE_POLL_MS } from "@/lib/dashboard-query";
 import { format } from "date-fns";
 import { Target, StickyNote, Bell, CheckCircle2, Plus } from "lucide-react";
 import { useState } from "react";
@@ -24,7 +25,8 @@ export function DashboardWorkspace() {
     queryKey: ["baker-workspace", bakerId],
     queryFn: () => getBakerWorkspace(bakerId),
     enabled: !!bakerId,
-    refetchInterval: 10_000,
+    refetchInterval: WORKSPACE_POLL_MS,
+    refetchIntervalInBackground: false,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["baker-workspace", bakerId] });
@@ -49,8 +51,8 @@ export function DashboardWorkspace() {
     onSuccess: invalidate,
   });
 
-  if (isLoading) {
-    return <div className="h-48 bg-muted animate-pulse rounded-xl" />;
+  if (isLoading && !data) {
+    return <div className="h-48 bg-muted/60 animate-pulse rounded-xl mt-8" />;
   }
 
   const primaryGoal = data?.goals[0];

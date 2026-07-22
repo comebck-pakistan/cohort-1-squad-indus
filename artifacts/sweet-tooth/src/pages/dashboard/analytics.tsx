@@ -17,6 +17,7 @@ import {
 import { useBuyerSession } from "@/hooks/use-session";
 import { Users, Megaphone, Sparkles, Percent, Calendar, Heart, Send, CheckCircle } from "lucide-react";
 import { customFetch } from "@workspace/api-client-react";
+import { ANALYTICS_POLL_MS, liveDashboardQuery } from "@/lib/dashboard-query";
 
 type Period = "daily" | "weekly" | "monthly";
 type Tab = "sales" | "marketing";
@@ -28,8 +29,6 @@ const PERIODS: { id: Period; label: string }[] = [
 ];
 
 const SOURCE_COLORS = ["#4A0E8F", "#F5C518", "#E879A9", "#6B7280"];
-
-const REALTIME_MS = 10_000;
 
 type CampaignSegment = {
   id: string;
@@ -108,7 +107,7 @@ export default function DashboardAnalytics() {
     query: {
       enabled: !!bakerId,
       queryKey: getGetBakerAnalyticsQueryKey(bakerId, period),
-      refetchInterval: REALTIME_MS,
+      ...liveDashboardQuery(ANALYTICS_POLL_MS),
     },
   });
 
@@ -116,7 +115,7 @@ export default function DashboardAnalytics() {
     query: {
       enabled: !!bakerId,
       queryKey: getGetOrderSourcesQueryKey(bakerId),
-      refetchInterval: REALTIME_MS,
+      ...liveDashboardQuery(ANALYTICS_POLL_MS),
     },
   });
 
@@ -126,7 +125,7 @@ export default function DashboardAnalytics() {
       query: {
         enabled: !!bakerId,
         queryKey: getListCustomersQueryKey({ bakerId }),
-        refetchInterval: REALTIME_MS,
+        ...liveDashboardQuery(ANALYTICS_POLL_MS),
       },
     },
   );
@@ -145,7 +144,8 @@ export default function DashboardAnalytics() {
         happyRate: number | null;
       }>(`/api/analytics/baker/${bakerId}/feedback`),
     enabled: !!bakerId,
-    refetchInterval: REALTIME_MS,
+    refetchInterval: ANALYTICS_POLL_MS,
+    refetchIntervalInBackground: false,
   });
 
   const segments = buildCampaignSegments(customers, "your bakery");
@@ -308,7 +308,7 @@ export default function DashboardAnalytics() {
           </div>
         </div>
 
-        {isLoading ? (
+        {isLoading && !analytics ? (
           <div className="animate-pulse space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {[...Array(5)].map((_, i) => (

@@ -15,6 +15,7 @@ import { AgentPlayground } from "@/components/dashboard/agent-playground";
 import { Link } from "wouter";
 import type { KnowledgeReindexResult } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
+import { liveDashboardQuery, ORDERS_POLL_MS } from "@/lib/dashboard-query";
 import { WhatsAppEmbeddedSignup } from "@/components/whatsapp-embedded-signup";
 import { InstagramMetaConnect } from "@/components/instagram-meta-connect";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,17 +66,18 @@ export default function AgentHub() {
 
   const { data: conversations } = useListConversations(bakerId, {
     query: {
-      enabled: !!bakerId,
+      enabled: !!bakerId && activeTab === "conversations",
       queryKey: getListConversationsQueryKey(bakerId),
-      refetchInterval: 5000,
+      ...liveDashboardQuery(ORDERS_POLL_MS),
     },
   });
 
   const { data: chatHistory } = useGetChatHistory(bakerId, selectedBuyerId ?? 0, {
     query: {
-      enabled: !!bakerId && selectedBuyerId !== null,
+      enabled: !!bakerId && activeTab === "conversations" && selectedBuyerId !== null,
       queryKey: getGetChatHistoryQueryKey(bakerId, selectedBuyerId ?? 0),
-      refetchInterval: 5000,
+      refetchInterval: activeTab === "conversations" && selectedBuyerId !== null ? ORDERS_POLL_MS : false,
+      refetchIntervalInBackground: false,
     },
   });
 

@@ -128,10 +128,13 @@ export default function DashboardSettings() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading && !baker) {
     return (
       <DashboardLayout>
-        <div className="p-8 text-muted-foreground">Loading settings...</div>
+        <div className="p-8 max-w-2xl animate-pulse space-y-4">
+          <div className="h-10 w-64 bg-muted rounded-lg" />
+          <div className="h-40 bg-muted rounded-xl" />
+        </div>
       </DashboardLayout>
     );
   }

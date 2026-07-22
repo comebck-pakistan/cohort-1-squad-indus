@@ -18,7 +18,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { signOut } = useClerk();
   const { logoutNatively } = useManagedBaker();
   const { bakerId } = useBuyerSession();
-  const { data: baker } = useGetBaker(bakerId, { query: { enabled: !!bakerId, queryKey: ["baker", bakerId] } });
+  const { data: baker } = useGetBaker(bakerId, {
+    query: { enabled: !!bakerId, queryKey: ["baker", bakerId], staleTime: 60_000 },
+  });
 
   const navItems = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },

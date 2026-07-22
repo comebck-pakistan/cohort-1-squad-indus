@@ -3,9 +3,8 @@ import { format } from "date-fns";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useListCustomers, getListCustomersQueryKey } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
+import { liveDashboardQuery, ORDERS_POLL_MS } from "@/lib/dashboard-query";
 import { Users, Heart, AlertTriangle, ArrowRight } from "lucide-react";
-
-const POLL_MS = 10_000;
 
 export default function DashboardCustomers() {
   const { bakerId } = useBuyerSession();
@@ -15,7 +14,7 @@ export default function DashboardCustomers() {
       query: {
         enabled: !!bakerId,
         queryKey: getListCustomersQueryKey({ bakerId }),
-        refetchInterval: POLL_MS,
+        ...liveDashboardQuery(ORDERS_POLL_MS),
       },
     },
   );
@@ -33,7 +32,7 @@ export default function DashboardCustomers() {
           Built from real orders — repeat buyers, spend history, and who might need a win-back message before Eid or a birthday.
         </p>
 
-        {isLoading ? (
+        {isLoading && !customers ? (
           <div className="animate-pulse h-64 bg-muted rounded-xl w-full" />
         ) : (
           <>

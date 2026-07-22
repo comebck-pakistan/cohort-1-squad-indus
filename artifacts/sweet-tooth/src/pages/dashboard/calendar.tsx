@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useListOrders, getListOrdersQueryKey, useGetBaker, getGetBakerQueryKey } from "@workspace/api-client-react";
 import { useBuyerSession } from "@/hooks/use-session";
+import { liveDashboardQuery, ORDERS_POLL_MS } from "@/lib/dashboard-query";
 import {
   format,
   startOfMonth,
@@ -23,7 +24,7 @@ export default function DashboardCalendar() {
   // Fetch all orders for this baker
   const { data: orders, isLoading } = useListOrders(
     { bakerId },
-    { query: { enabled: !!bakerId, queryKey: getListOrdersQueryKey({ bakerId }), refetchInterval: 10000 } }
+    { query: { enabled: !!bakerId, queryKey: getListOrdersQueryKey({ bakerId }), ...liveDashboardQuery(ORDERS_POLL_MS) } }
   );
 
   // Fetch baker config for capacity caps and date blocking

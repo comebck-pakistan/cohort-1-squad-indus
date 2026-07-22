@@ -116,7 +116,7 @@ export default function DashboardPayments() {
         </div>
 
         {/* Outstanding payments */}
-        {isLoading ? (
+        {isLoading && !orders ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-20 bg-muted rounded-xl animate-pulse" />

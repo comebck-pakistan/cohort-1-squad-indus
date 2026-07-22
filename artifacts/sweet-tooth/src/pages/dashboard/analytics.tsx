@@ -480,18 +480,51 @@ export default function DashboardAnalytics() {
                   </button>
                 </div>
 
-                {/* Message Customization Input */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Customize Broadcast Message</label>
-                  <textarea
-                    value={campaignMessage}
-                    onChange={(e) => setCampaignMessage(e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none resize-none text-foreground font-sans leading-relaxed"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    💡 Variables like customer name will be automatically populated on dispatch.
-                  </p>
+                {/* Message Customization Input & WhatsApp Preview */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Customize Broadcast Message</label>
+                    <textarea
+                      value={campaignMessage}
+                      onChange={(e) => setCampaignMessage(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted/20 focus:ring-1 focus:ring-primary focus:outline-none resize-none text-foreground font-sans leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Live WhatsApp Preview */}
+                  <div className="border border-border rounded-xl bg-muted/30 p-3 space-y-2">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Live WhatsApp Broadcast Preview</span>
+                    <div className="rounded-lg p-3 bg-[#e5ddd5] dark:bg-zinc-800 border border-[#b4a996]/30 text-zinc-800 dark:text-zinc-100 flex flex-col gap-1 max-w-sm mx-auto shadow-sm">
+                      <div className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-t-md flex items-center justify-between">
+                        <span>Sweet Tooth Agent</span>
+                        <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className="bg-white dark:bg-zinc-950 p-2.5 rounded-b-md rounded-tr-md text-xs relative shadow-xs leading-relaxed">
+                        <p className="whitespace-pre-wrap">{campaignMessage}</p>
+                        <span className="absolute bottom-1 right-2 text-[9px] text-muted-foreground">Delivered</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Test Send Input */}
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Send Test WhatsApp (Optional)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        placeholder="e.g. +92 300 1234567"
+                        className="flex-1 px-3 py-1.5 border border-border rounded-lg text-xs bg-background text-foreground"
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => alert("Test broadcast sent successfully via mock WhatsApp API gateway!")}
+                        className="px-3 py-1.5 bg-secondary text-primary rounded-lg text-xs font-medium hover:bg-secondary/90 transition-colors cursor-pointer"
+                      >
+                        Send Test
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Send button */}

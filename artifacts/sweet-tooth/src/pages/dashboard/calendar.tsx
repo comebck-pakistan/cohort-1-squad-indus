@@ -234,9 +234,30 @@ export default function DashboardCalendar() {
                     </span>
                   </div>
                   {selectedOrder.paymentScreenshotUrl && (
-                    <p className="text-xs text-muted-foreground font-mono mt-1 select-all bg-muted/20 p-1 rounded border border-border truncate">
-                      <strong>Proof URL/TID:</strong> {selectedOrder.paymentScreenshotUrl}
-                    </p>
+                    <div className="mt-2 space-y-1.5">
+                      <span className="text-xs font-semibold text-muted-foreground block">Receipt / Design Reference Image:</span>
+                      <div className="border border-border rounded-lg overflow-hidden bg-muted p-1">
+                        {selectedOrder.paymentScreenshotUrl.startsWith("http") ? (
+                          <a href={selectedOrder.paymentScreenshotUrl} target="_blank" rel="noopener noreferrer" className="block relative group cursor-zoom-in">
+                            <img 
+                              src={selectedOrder.paymentScreenshotUrl} 
+                              alt="Payment Proof or reference design" 
+                              className="w-full max-h-48 object-contain rounded-md"
+                              onError={(e) => {
+                                (e.target as any).style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                              Open Full Size
+                            </div>
+                          </a>
+                        ) : (
+                          <div className="p-2 text-xs font-mono select-all truncate bg-background rounded border border-border">
+                            {selectedOrder.paymentScreenshotUrl}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

@@ -1,39 +1,12 @@
 import { Link } from "wouter";
 import { BuyerLayout } from "@/components/layout/buyer-layout";
+import { PricingSection } from "@/components/marketing/pricing-section";
 import { ArrowRight, Bot, CheckCircle2, Clock3, Instagram, MessageSquare, Phone, Share2, ShieldCheck, Sparkles } from "lucide-react";
 
 const features = [
   { icon: Bot, title: "Your always-on order agent", text: "It answers menu, availability, delivery, dietary and custom-order questions using the rules you set - even when you are busy baking." },
   { icon: MessageSquare, title: "One calm order workspace", text: "Bring customer conversations and order context out of scattered WhatsApp and Instagram chats into one dashboard." },
   { icon: Share2, title: "Your menu supports the agent", text: "Share one branded link or QR code. Your live menu gives the agent accurate products, prices and availability to answer from." },
-];
-
-const plans = [
-  {
-    name: "Starter",
-    price: "PKR 999",
-    description: "For a home bakery that wants a professional menu and a reliable first response.",
-    features: [
-      "Your branded menu link and QR code",
-      "Up to 100 orders each month",
-      "300 menu-grounded AI customer replies",
-      "Menu, dietary labels, delivery areas and availability settings",
-      "Orders, customer history and payment-review dashboard",
-    ],
-  },
-  {
-    name: "Growth",
-    price: "PKR 2,499",
-    description: "For busy bakeries with repeat customers, custom orders and more daily conversations.",
-    featured: true,
-    features: [
-      "Everything in Starter",
-      "Up to 500 orders each month",
-      "1,500 menu-grounded AI customer replies",
-      "Customer insights, repeat-buyer analytics and campaign planning",
-      "Priority setup support and advanced agent rules",
-    ],
-  },
 ];
 
 export default function Home() {
@@ -70,30 +43,7 @@ export default function Home() {
 
       <section className="border-y border-border bg-card px-4 py-16"><div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3"><div><p className="text-3xl font-bold text-primary">1 shared link</p><p className="mt-2 text-sm text-muted-foreground">A branded menu you can put in your WhatsApp bio, Instagram profile, or QR code.</p></div><div><p className="text-3xl font-bold text-primary">24/7 first reply</p><p className="mt-2 text-sm text-muted-foreground">Your agent handles the common questions while you focus on baking and fulfilment.</p></div><div><p className="text-3xl font-bold text-primary">You stay in control</p><p className="mt-2 text-sm text-muted-foreground">Set availability, delivery sectors, dietary labels, policies and escalation rules.</p></div></div></section>
 
-      <section id="pricing" className="scroll-mt-20 bg-muted px-4 py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-bold uppercase tracking-wider text-primary">Simple monthly plans</p>
-            <h2 className="mt-3 font-serif text-4xl font-bold">Pay for an agent that knows your bakery.</h2>
-            <p className="mt-4 text-muted-foreground">Every plan includes a private bakery dashboard. AI reply limits keep your monthly cost predictable; extra replies are PKR 3 each.</p>
-          </div>
-          <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
-            {plans.map((plan) => (
-              <article key={plan.name} className={`relative rounded-2xl border p-7 shadow-sm ${plan.featured ? "border-primary bg-primary text-primary-foreground shadow-lg" : "border-border bg-card"}`}>
-                {plan.featured && <span className="absolute -top-3 left-6 rounded-full bg-secondary px-3 py-1 text-xs font-bold text-primary">Most popular</span>}
-                <h3 className="font-serif text-2xl font-bold">{plan.name}</h3>
-                <p className={`mt-2 text-sm leading-relaxed ${plan.featured ? "text-white/80" : "text-muted-foreground"}`}>{plan.description}</p>
-                <p className="mt-6 text-4xl font-bold">{plan.price}<span className={`ml-1 text-sm font-medium ${plan.featured ? "text-white/80" : "text-muted-foreground"}`}>/ month</span></p>
-                <ul className="mt-6 space-y-3 text-sm">
-                  {plan.features.map((feature) => <li key={feature} className="flex gap-2"><CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${plan.featured ? "text-secondary" : "text-primary"}`} />{feature}</li>)}
-                </ul>
-                <Link href="/dashboard/register" className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold transition-colors ${plan.featured ? "bg-secondary text-primary hover:bg-secondary/90" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>Start with {plan.name} <ArrowRight className="h-4 w-4" /></Link>
-              </article>
-            ))}
-          </div>
-          <p className="mt-7 text-center text-sm text-muted-foreground">No customer payment gateway is required to start. Your bakery can take Easypaisa, JazzCash or bank-transfer payments and review payment evidence in the dashboard.</p>
-        </div>
-      </section>
+      <PricingSection />
 
       <section className="mx-auto grid max-w-6xl gap-12 px-4 py-20 md:grid-cols-[.9fr_1.1fr] md:items-center"><div><p className="text-sm font-bold uppercase tracking-wider text-primary">A professional customer experience</p><h2 className="mt-3 font-serif text-4xl font-bold">Built to answer clearly, not make things up.</h2><p className="mt-5 leading-relaxed text-muted-foreground">The agent is grounded in your menu, dietary notes, delivery areas, availability and payment policies. When a customer needs a human, it creates a clear follow-up for you instead of guessing.</p><Link href="/contact" className="mt-7 inline-flex items-center gap-2 font-bold text-primary hover:underline">Talk to the Sweet Tooth team <ArrowRight className="h-4 w-4" /></Link></div><div className="grid gap-4 sm:grid-cols-2"><div className="rounded-2xl border border-border p-5"><ShieldCheck className="h-7 w-7 text-primary" /><h3 className="mt-4 font-bold">Menu-grounded answers</h3><p className="mt-2 text-sm text-muted-foreground">Product facts and rules stay at the centre of every response.</p></div><div className="rounded-2xl border border-border p-5"><Clock3 className="h-7 w-7 text-primary" /><h3 className="mt-4 font-bold">Availability-aware</h3><p className="mt-2 text-sm text-muted-foreground">Tell customers your lead time, working hours and delivery areas.</p></div><div className="rounded-2xl border border-border p-5 sm:col-span-2"><CheckCircle2 className="h-7 w-7 text-primary" /><h3 className="mt-4 font-bold">Your bakery, your rules</h3><p className="mt-2 text-sm text-muted-foreground">You approve the policies, payments, custom-order questions and agent escalation settings from one dashboard.</p></div></div></section>
 

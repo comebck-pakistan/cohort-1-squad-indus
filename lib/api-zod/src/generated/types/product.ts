@@ -22,6 +22,13 @@ export interface Product {
   category: string;
   occasionTags?: string[];
   dietaryTags?: string[];
+  ingredients?: string[];
+  allergens?: string[];
+  suggestionTags?: string[];
+  pickupAvailable?: boolean;
+  deliveryAvailable?: boolean;
+  /** @nullable */
+  leadTimeHours?: number | null;
   /** @nullable */
   photoUrl?: string | null;
   totalOrders?: number;

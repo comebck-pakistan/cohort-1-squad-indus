@@ -20,5 +20,11 @@ export interface ProductInput {
   category: string;
   occasionTags?: string[];
   dietaryTags?: string[];
+  ingredients?: string[];
+  allergens?: string[];
+  suggestionTags?: string[];
+  pickupAvailable?: boolean;
+  deliveryAvailable?: boolean;
+  leadTimeHours?: number;
   photoUrl?: string;
 }

@@ -84,7 +84,7 @@ async function seed() {
     maxOrdersPerDay: 10,
     agentActive: false,
     marketplaceVisible: true,
-    subscriptionPlan: "free",
+    subscriptionPlan: "starter",
     ratingAvg: 4.7,
     totalOrders: 94,
     slug: "amna-bakes",

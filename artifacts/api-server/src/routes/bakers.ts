@@ -391,10 +391,16 @@ router.patch("/bakers/:bakerId", requireBakerAuth, async (req, res): Promise<voi
     return;
   }
   
-  const { socialLinks, blockedDates, drops, ...profileUpdates } = parsed.data as typeof parsed.data & {
+  const { socialLinks, blockedDates, drops, pickupAddress, allowPickup, allowDelivery, cancellationAllowed, cancellationHoursBefore, cancellationPolicy, ...profileUpdates } = parsed.data as typeof parsed.data & {
     socialLinks?: { instagram?: string; facebook?: string };
     blockedDates?: string[];
     drops?: Array<Record<string, unknown>>;
+    pickupAddress?: string;
+    allowPickup?: boolean;
+    allowDelivery?: boolean;
+    cancellationAllowed?: boolean;
+    cancellationHoursBefore?: number;
+    cancellationPolicy?: string;
   };
   const [existing] = await db.select().from(bakersTable).where(eq(bakersTable.id, params.data.bakerId));
   if (!existing) {
@@ -409,6 +415,12 @@ router.patch("/bakers/:bakerId", requireBakerAuth, async (req, res): Promise<voi
       ...(socialLinks !== undefined ? { socialLinks } : {}),
       ...(blockedDates !== undefined ? { blockedDates } : {}),
       ...(drops !== undefined ? { drops } : {}),
+      ...(pickupAddress !== undefined ? { pickupAddress } : {}),
+      ...(allowPickup !== undefined ? { allowPickup } : {}),
+      ...(allowDelivery !== undefined ? { allowDelivery } : {}),
+      ...(cancellationAllowed !== undefined ? { cancellationAllowed } : {}),
+      ...(cancellationHoursBefore !== undefined ? { cancellationHoursBefore } : {}),
+      ...(cancellationPolicy !== undefined ? { cancellationPolicy } : {}),
     }
   }).where(eq(bakersTable.id, params.data.bakerId)).returning();
   if (!baker) {

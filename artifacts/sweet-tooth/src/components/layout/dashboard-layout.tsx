@@ -8,7 +8,7 @@ import { InAppBrowserModal } from "@/components/ui/in-app-browser";
 import { useManagedBaker } from "@/lib/managed-auth";
 import {
   LayoutDashboard, ShoppingBag, Grid, DollarSign,
-  BarChart3, Users, Calendar, Settings, LogOut, Bot, Globe,
+  BarChart3, Users, Calendar, Settings, LogOut, Bot, Globe, BookOpen, NotebookText,
 } from "lucide-react";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     { href: "/dashboard/payments", label: "Payments", icon: DollarSign },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/dashboard/customers", label: "Customers", icon: Users },
+    { href: "/dashboard/khata", label: "Khata", icon: NotebookText },
     { href: "/dashboard/agent-hub", label: "Agent Hub", icon: Bot },
+    { href: "/dashboard/guide", label: "Baker Guide", icon: BookOpen },
     { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];

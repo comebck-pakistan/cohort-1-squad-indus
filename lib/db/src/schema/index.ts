@@ -9,5 +9,6 @@ export * from "./notifications";
 export * from "./conversation_memory";
 export * from "./knowledge_chunks";
 export * from "./baker_workspace";
+export * from "./inventory_ledger";
 export * from "./meta_connections";
 export * from "./channel_events";

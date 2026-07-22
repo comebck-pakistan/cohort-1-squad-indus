@@ -15,6 +15,11 @@ import {
   sendWhatsAppTextMessage,
 } from "../lib/whatsapp.js";
 import { decryptSecret } from "../lib/secret-box.js";
+import {
+  findPendingFeedbackOrder,
+  parseFeedbackReply,
+  recordOrderFeedback,
+} from "../lib/order-feedback.js";
 
 const router = Router();
 
@@ -174,6 +179,29 @@ router.post("/webhooks/whatsapp", async (req, res): Promise<void> => {
       }
 
       try {
+        const pendingFeedback = await findPendingFeedbackOrder(baker.id, msg.from);
+        const feedbackReply = parseFeedbackReply(msg.text);
+        if (pendingFeedback && feedbackReply) {
+          await recordOrderFeedback({
+            orderId: pendingFeedback.id,
+            feedback: feedbackReply,
+            buyerWhatsapp: msg.from,
+          });
+          const thankYou =
+            feedbackReply === "had_issue"
+              ? `We're sorry to hear that. ${baker.ownerName || baker.businessName} will review order #${pendingFeedback.id} and get back to you soon.`
+              : `Shukriya for your feedback on order #${pendingFeedback.id}! We love serving you. — ${baker.businessName}`;
+          const outboundPhoneNumberId =
+            ((baker.agentConfig ?? {}) as { whatsappPhoneNumberId?: string }).whatsappPhoneNumberId ??
+            msg.phoneNumberId;
+          await sendWhatsAppTextMessage(outboundPhoneNumberId, msg.from, thankYou, accessToken);
+          await db
+            .update(channelEventsTable)
+            .set({ status: "completed", completedAt: new Date(), lastErrorCode: null })
+            .where(eq(channelEventsTable.id, eventId));
+          continue;
+        }
+
         const result = await processChatMessage({
           bakerId: baker.id,
           message: msg.text,

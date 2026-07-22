@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -43,12 +44,12 @@ type CampaignSegment = {
 };
 
 function buildCampaignSegments(
-  customers: Array<{ isRegular: boolean; isAtRisk: boolean; totalOrders: number }>,
+  customers: Array<{ isRegular?: boolean; isAtRisk?: boolean; totalOrders?: number }>,
   bakeryName: string,
 ): CampaignSegment[] {
   const loyal = customers.filter((c) => c.isRegular && !c.isAtRisk);
   const inactive = customers.filter((c) => c.isAtRisk);
-  const occasional = customers.filter((c) => !c.isRegular && !c.isAtRisk && c.totalOrders > 0);
+  const occasional = customers.filter((c) => !c.isRegular && !c.isAtRisk && (c.totalOrders ?? 0) > 0);
 
   return [
     {
@@ -129,6 +130,23 @@ export default function DashboardAnalytics() {
       },
     },
   );
+
+  const { data: feedbackStats } = useQuery({
+    queryKey: ["feedback-analytics", bakerId],
+    queryFn: () =>
+      customFetch<{
+        deliveredCount: number;
+        feedbackReceived: number;
+        feedbackPending: number;
+        lovedIt: number;
+        okay: number;
+        hadIssue: number;
+        satisfactionRate: number | null;
+        happyRate: number | null;
+      }>(`/api/analytics/baker/${bakerId}/feedback`),
+    enabled: !!bakerId,
+    refetchInterval: REALTIME_MS,
+  });
 
   const segments = buildCampaignSegments(customers, "your bakery");
   const returningBuyers = customers.filter((c) => c.totalOrders > 1);
@@ -327,6 +345,40 @@ export default function DashboardAnalytics() {
 
             {activeTab === "sales" ? (
               <>
+                {feedbackStats && (
+                  <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                    <h3 className="font-serif text-lg font-bold mb-1">Service quality (after delivery)</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      When you mark orders Delivered, buyers get a WhatsApp feedback request automatically.
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-bold">Delivered</p>
+                        <p className="text-2xl font-bold">{feedbackStats.deliveredCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-bold">Feedback received</p>
+                        <p className="text-2xl font-bold text-primary">{feedbackStats.feedbackReceived}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-bold">Happy rate</p>
+                        <p className="text-2xl font-bold text-green-700">
+                          {feedbackStats.happyRate != null ? `${feedbackStats.happyRate}%` : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-bold">Issues flagged</p>
+                        <p className="text-2xl font-bold text-amber-700">{feedbackStats.hadIssue}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                      <span className="rounded-full bg-green-100 text-green-800 px-3 py-1">Loved it: {feedbackStats.lovedIt}</span>
+                      <span className="rounded-full bg-muted px-3 py-1">Okay: {feedbackStats.okay}</span>
+                      <span className="rounded-full bg-amber-100 text-amber-800 px-3 py-1">Pending: {feedbackStats.feedbackPending}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Revenue & Orders Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="p-6 rounded-xl border border-border bg-card shadow-sm">

@@ -91,6 +91,12 @@ export const SearchMarketplaceResponse = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -320,6 +326,12 @@ export const UpdateBakerBody = zod.object({
   "advancePercentage": zod.number().optional(),
   "paymentDetails": zod.string().optional(),
   "blockedDates": zod.array(zod.coerce.date()).optional(),
+  "pickupAddress": zod.string().optional(),
+  "allowPickup": zod.boolean().optional(),
+  "allowDelivery": zod.boolean().optional(),
+  "cancellationAllowed": zod.boolean().optional(),
+  "cancellationHoursBefore": zod.number().optional(),
+  "cancellationPolicy": zod.string().optional(),
   "socialLinks": zod.object({
   "instagram": zod.string().url().optional(),
   "facebook": zod.string().url().optional()
@@ -329,12 +341,12 @@ export const UpdateBakerBody = zod.object({
   "productId": zod.number().optional(),
   "productName": zod.string().optional(),
   "title": zod.string().optional(),
-  "releaseDate": zod.string().optional(),
-  "date": zod.string().optional(),
+  "releaseDate": zod.coerce.date().optional(),
+  "date": zod.coerce.date().optional(),
   "releaseTime": zod.string().optional(),
   "limitStock": zod.number().optional(),
   "active": zod.boolean().optional()
-}).passthrough()).optional()
+})).optional().describe('Flash drops stored in agentConfig (id, product title, release date).')
 })
 
 export const UpdateBakerResponse = zod.object({
@@ -398,6 +410,12 @@ export const GetBakerProductsResponseItem = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -479,6 +497,12 @@ export const ListProductsResponseItem = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -508,6 +532,12 @@ export const CreateProductBody = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().optional(),
   "photoUrl": zod.string().optional()
 })
 
@@ -528,6 +558,12 @@ export const CreateProductResponse = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -561,6 +597,12 @@ export const GetProductResponse = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -592,6 +634,12 @@ export const UpdateProductBody = zod.object({
   "category": zod.string().optional(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().optional(),
   "displayOrder": zod.number().optional()
 })
@@ -613,6 +661,12 @@ export const UpdateProductResponse = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -656,6 +710,12 @@ export const ToggleProductStockResponse = zod.object({
   "category": zod.string(),
   "occasionTags": zod.array(zod.string()).optional(),
   "dietaryTags": zod.array(zod.string()).optional(),
+  "ingredients": zod.array(zod.string()).optional(),
+  "allergens": zod.array(zod.string()).optional(),
+  "suggestionTags": zod.array(zod.string()).optional(),
+  "pickupAvailable": zod.boolean().optional(),
+  "deliveryAvailable": zod.boolean().optional(),
+  "leadTimeHours": zod.number().nullish(),
   "photoUrl": zod.string().nullish(),
   "totalOrders": zod.number().optional(),
   "isBestSeller": zod.boolean().optional(),
@@ -703,6 +763,10 @@ export const ListOrdersResponseItem = zod.object({
   "paymentScreenshotUrl": zod.string().nullish(),
   "advancePaid": zod.boolean().optional(),
   "requireAdvance": zod.boolean().optional(),
+  "fulfillmentType": zod.enum(['delivery', 'pickup']).optional(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "serviceFeedback": zod.enum(['loved_it', 'okay', 'had_issue']).nullish(),
+  "feedbackNote": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -736,7 +800,8 @@ export const CreateOrderBody = zod.object({
   "textOnCake": zod.string().optional(),
   "paymentScreenshotUrl": zod.string().optional(),
   "advancePaid": zod.boolean().optional(),
-  "requireAdvance": zod.boolean().optional()
+  "requireAdvance": zod.boolean().optional(),
+  "fulfillmentType": zod.enum(['delivery', 'pickup']).optional()
 })
 
 export const CreateOrderResponse = zod.object({
@@ -768,6 +833,10 @@ export const CreateOrderResponse = zod.object({
   "paymentScreenshotUrl": zod.string().nullish(),
   "advancePaid": zod.boolean().optional(),
   "requireAdvance": zod.boolean().optional(),
+  "fulfillmentType": zod.enum(['delivery', 'pickup']).optional(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "serviceFeedback": zod.enum(['loved_it', 'okay', 'had_issue']).nullish(),
+  "feedbackNote": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -809,6 +878,10 @@ export const GetOrderResponse = zod.object({
   "paymentScreenshotUrl": zod.string().nullish(),
   "advancePaid": zod.boolean().optional(),
   "requireAdvance": zod.boolean().optional(),
+  "fulfillmentType": zod.enum(['delivery', 'pickup']).optional(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "serviceFeedback": zod.enum(['loved_it', 'okay', 'had_issue']).nullish(),
+  "feedbackNote": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -856,6 +929,10 @@ export const UpdateOrderStatusResponse = zod.object({
   "paymentScreenshotUrl": zod.string().nullish(),
   "advancePaid": zod.boolean().optional(),
   "requireAdvance": zod.boolean().optional(),
+  "fulfillmentType": zod.enum(['delivery', 'pickup']).optional(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "serviceFeedback": zod.enum(['loved_it', 'okay', 'had_issue']).nullish(),
+  "feedbackNote": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -901,6 +978,10 @@ export const MarkOrderPaidResponse = zod.object({
   "paymentScreenshotUrl": zod.string().nullish(),
   "advancePaid": zod.boolean().optional(),
   "requireAdvance": zod.boolean().optional(),
+  "fulfillmentType": zod.enum(['delivery', 'pickup']).optional(),
+  "deliveredAt": zod.coerce.date().nullish(),
+  "serviceFeedback": zod.enum(['loved_it', 'okay', 'had_issue']).nullish(),
+  "feedbackNote": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })

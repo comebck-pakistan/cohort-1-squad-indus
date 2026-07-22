@@ -46,6 +46,7 @@ export default function Cart() {
   const [buyerWhatsapp, setBuyerWhatsapp] = useState("");
   const [buyerAddress, setBuyerAddress] = useState("");
   const [buyerArea, setBuyerArea] = useState("");
+  const [fulfillmentType, setFulfillmentType] = useState<"delivery" | "pickup">("delivery");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -92,8 +93,9 @@ export default function Cart() {
           bakerId,
           buyerName,
           buyerWhatsapp,
-          buyerAddress,
+          buyerAddress: fulfillmentType === "pickup" ? "Pickup from bakery" : buyerAddress,
           buyerArea: buyerArea || undefined,
+          fulfillmentType,
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -177,10 +179,20 @@ export default function Cart() {
             <p className="text-right font-mono text-lg font-bold">Total PKR {total.toLocaleString()}</p>
 
             <form onSubmit={placeOrder} className="space-y-3 rounded-xl border border-border bg-card p-4">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setFulfillmentType("delivery")} className={`flex-1 rounded-lg border py-2 text-sm font-semibold ${fulfillmentType === "delivery" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>Home delivery</button>
+                <button type="button" onClick={() => setFulfillmentType("pickup")} className={`flex-1 rounded-lg border py-2 text-sm font-semibold ${fulfillmentType === "pickup" ? "border-primary bg-primary/10 text-primary" : "border-border"}`}>Pickup</button>
+              </div>
               <input required value={buyerName} onChange={(e) => setBuyerName(e.target.value)} placeholder="Your name" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
               <input required value={buyerWhatsapp} onChange={(e) => setBuyerWhatsapp(e.target.value)} placeholder="WhatsApp +92 300 1234567" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-              <input required value={buyerAddress} onChange={(e) => setBuyerAddress(e.target.value)} placeholder="Delivery address" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
-              <input value={buyerArea} onChange={(e) => setBuyerArea(e.target.value)} placeholder="Area (optional)" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+              {fulfillmentType === "delivery" ? (
+                <>
+                  <input required value={buyerAddress} onChange={(e) => setBuyerAddress(e.target.value)} placeholder="Delivery address" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                  <input value={buyerArea} onChange={(e) => setBuyerArea(e.target.value)} placeholder="Area (optional)" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground rounded-lg bg-muted/40 px-3 py-2">You will collect from the baker&apos;s kitchen. They will confirm pickup time on WhatsApp.</p>
+              )}
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
               <button type="submit" disabled={loading} className="w-full rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50">
                 {loading ? "Placing order…" : "Place guest order"}

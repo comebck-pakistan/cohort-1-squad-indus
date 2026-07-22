@@ -7,12 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isClerkConfigured } from "@/lib/app-auth";
+import { getPlanById } from "@/lib/pricing-plans";
 import { useManagedBaker } from "@/lib/managed-auth";
 import { customFetch } from "@workspace/api-client-react";
 
 export default function BakerLogin({ initialTab = "login" }: { initialTab?: "login" | "register" }) {
   const [activeTab, setActiveTab] = useState<"login" | "register">(initialTab);
   const [, setLocation] = useLocation();
+  const selectedPlanId =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("plan")
+      : null;
+  const selectedPlan = getPlanById(selectedPlanId);
   const [showClerkSSO, setShowClerkSSO] = useState(isClerkConfigured());
   const { loginNatively } = useManagedBaker();
   
@@ -189,6 +195,16 @@ export default function BakerLogin({ initialTab = "login" }: { initialTab?: "log
             </TabsContent>
 
             <TabsContent value="register" className="space-y-4 focus-visible:outline-none">
+              {selectedPlan && selectedPlan.id !== "free" && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs text-muted-foreground">
+                  You selected <strong className="text-primary">{selectedPlan.name}</strong>. Start free — upgrade after
+                  your first orders. Founder quarterly pricing is on the{" "}
+                  <Link href="/#pricing" className="font-semibold text-primary hover:underline">
+                    packages page
+                  </Link>
+                  .
+                </div>
+              )}
               {error && (
                 <div className="flex items-center gap-2 p-3 text-xs font-semibold text-destructive rounded-lg bg-destructive/10 border border-destructive/20">
                   <AlertCircle className="w-4 h-4 shrink-0" />

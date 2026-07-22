@@ -5,7 +5,9 @@
  * Sweet Tooth — Pakistan's Home Baker Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderFulfillmentType } from './orderFulfillmentType';
 import type { OrderItem } from './orderItem';
+import type { OrderServiceFeedback } from './orderServiceFeedback';
 
 export interface Order {
   id: number;
@@ -38,6 +40,13 @@ export interface Order {
   paymentScreenshotUrl?: string | null;
   advancePaid?: boolean;
   requireAdvance?: boolean;
+  fulfillmentType?: OrderFulfillmentType;
+  /** @nullable */
+  deliveredAt?: Date | null;
+  /** @nullable */
+  serviceFeedback?: OrderServiceFeedback;
+  /** @nullable */
+  feedbackNote?: string | null;
   createdAt: string;
   updatedAt?: string;
 }

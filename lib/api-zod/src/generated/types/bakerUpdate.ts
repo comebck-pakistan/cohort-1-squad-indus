@@ -5,19 +5,8 @@
  * Sweet Tooth — Pakistan's Home Baker Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { BakerUpdateDropsItem } from './bakerUpdateDropsItem';
 import type { BakerUpdateSocialLinks } from './bakerUpdateSocialLinks';
-
-export type BakerUpdateDrop = {
-  id: string;
-  productId?: number;
-  productName?: string;
-  title?: string;
-  releaseDate?: string;
-  date?: string;
-  releaseTime?: string;
-  limitStock?: number;
-  active?: boolean;
-};
 
 export interface BakerUpdate {
   businessName?: string;
@@ -38,7 +27,13 @@ export interface BakerUpdate {
   advancePercentage?: number;
   paymentDetails?: string;
   blockedDates?: Date[];
+  pickupAddress?: string;
+  allowPickup?: boolean;
+  allowDelivery?: boolean;
+  cancellationAllowed?: boolean;
+  cancellationHoursBefore?: number;
+  cancellationPolicy?: string;
   socialLinks?: BakerUpdateSocialLinks;
-  /** Flash drops merged into agentConfig */
-  drops?: BakerUpdateDrop[];
+  /** Flash drops stored in agentConfig (id, product title, release date). */
+  drops?: BakerUpdateDropsItem[];
 }

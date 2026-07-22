@@ -28,6 +28,11 @@ export const ordersTable = sweetTooth.table("orders", {
   cancellationReason: text("cancellation_reason"),
   cancelledBy: text("cancelled_by"),
   cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  fulfillmentType: text("fulfillment_type").notNull().default("delivery"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  feedbackRequestedAt: timestamp("feedback_requested_at", { withTimezone: true }),
+  serviceFeedback: text("service_feedback"),
+  feedbackNote: text("feedback_note"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

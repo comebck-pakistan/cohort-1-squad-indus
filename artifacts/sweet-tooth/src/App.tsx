@@ -25,6 +25,7 @@ import BakerProfile from "@/pages/buyer/baker-profile";
 import Bakers from "@/pages/buyer/bakers";
 import Cart from "@/pages/buyer/cart";
 import BuyerOrders from "@/pages/buyer/orders";
+import OrderFeedback from "@/pages/buyer/feedback";
 
 // Dashboard Pages
 import DashboardHome from "@/pages/dashboard/home";
@@ -36,6 +37,8 @@ import DashboardPayments from "@/pages/dashboard/payments";
 import DashboardCustomers from "@/pages/dashboard/customers";
 import DashboardCalendar from "@/pages/dashboard/calendar";
 import DashboardAgentHub from "@/pages/dashboard/agent-hub";
+import DashboardGuide from "@/pages/dashboard/guide";
+import DashboardKhata from "@/pages/dashboard/khata";
 import BakerLogin from "@/pages/auth/baker-login";
 import BakerRegister from "@/pages/auth/baker-register";
 import BakerOnboarding from "@/pages/auth/baker-onboarding";
@@ -76,6 +79,7 @@ function Router() {
       <Route path="/bakers/:id" component={BakerProfile} />
       <Route path="/cart" component={Cart} />
       <Route path="/orders" component={BuyerOrders} />
+      <Route path="/feedback/:orderId" component={OrderFeedback} />
 
       <Route path="/dashboard" component={() => <ProtectedDashboard component={DashboardHome} />} />
       <Route path="/dashboard/orders" component={() => <ProtectedDashboard component={DashboardOrders} />} />
@@ -86,6 +90,8 @@ function Router() {
       <Route path="/dashboard/customers" component={() => <ProtectedDashboard component={DashboardCustomers} />} />
       <Route path="/dashboard/calendar" component={() => <ProtectedDashboard component={DashboardCalendar} />} />
       <Route path="/dashboard/agent-hub" component={() => <ProtectedDashboard component={DashboardAgentHub} />} />
+      <Route path="/dashboard/khata" component={() => <ProtectedDashboard component={DashboardKhata} />} />
+      <Route path="/dashboard/guide" component={() => <ProtectedDashboard component={DashboardGuide} />} />
       <Route path="/dashboard/login" component={() => <BakerLogin />} />
       <Route path="/dashboard/register" component={BakerRegister} />
       <Route path="/dashboard/onboarding" component={BakerOnboarding} />

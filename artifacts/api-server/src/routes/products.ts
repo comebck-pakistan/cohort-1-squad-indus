@@ -22,6 +22,11 @@ function formatProduct(p: typeof productsTable.$inferSelect) {
     variants: p.variants ?? [],
     occasionTags: p.occasionTags ?? [],
     dietaryTags: p.dietaryTags ?? [],
+    ingredients: p.ingredients ?? [],
+    allergens: p.allergens ?? [],
+    suggestionTags: p.suggestionTags ?? [],
+    pickupAvailable: p.pickupAvailable ?? true,
+    deliveryAvailable: p.deliveryAvailable ?? true,
   };
 }
 

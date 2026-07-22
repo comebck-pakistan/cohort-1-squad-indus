@@ -16,6 +16,7 @@ import instagramRouter from "./instagram.js";
 import metaConnectRouter from "./meta-connect.js";
 import broadcastRouter from "./broadcast.js";
 import adminRouter from "./admin.js";
+import khataRouter from "./khata.js";
 
 const router = Router();
 
@@ -36,5 +37,6 @@ router.use(instagramRouter);
 router.use(metaConnectRouter);
 router.use(broadcastRouter);
 router.use(adminRouter);
+router.use(khataRouter);
 
 export default router;

@@ -11,7 +11,8 @@ import {
 import { useBuyerSession } from "@/hooks/use-session";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Calendar, Tag, Trash2, Clock, Sparkles, AlertCircle } from "lucide-react";
+import { Calendar, Tag, Trash2, Clock, Sparkles, AlertCircle, Settings2 } from "lucide-react";
+import { ProductEditorPanel } from "@/components/dashboard/product-editor";
 
 const DIETARY_AND_ALLERGEN_LABELS = [
   "Egg-free", "Vegan", "Vegetarian", "Gluten-free", "Dairy-free", "Nut-free", "Sugar-free", "Halal",
@@ -36,6 +37,7 @@ export default function DashboardCatalog() {
 
   const [activeTab, setActiveTab] = useState<"items" | "drops">("items");
   const [editingLabelsFor, setEditingLabelsFor] = useState<number | null>(null);
+  const [managingProduct, setManagingProduct] = useState<(NonNullable<typeof products>[number]) | null>(null);
 
   // Drops Form State
   const [selectedProductId, setSelectedProductId] = useState<string>("");
@@ -207,14 +209,23 @@ export default function DashboardCatalog() {
                           </div>
                         </fieldset>
                       )}
-                      <div className="flex justify-between items-center pt-4 border-t border-border mt-auto">
+                      <div className="flex justify-between items-center pt-4 border-t border-border mt-auto gap-2">
                         <span className="font-mono font-medium text-primary">PKR {product.basePricePkr.toLocaleString()}</span>
-                        <button 
-                          onClick={() => handleToggle(product.id)}
-                          className={`text-xs px-2 py-1 rounded-full font-medium ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                        >
-                          {product.isAvailable ? 'Available' : 'Out of stock'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setManagingProduct(product)}
+                            className="text-xs px-2 py-1 rounded-full font-medium border border-border hover:bg-muted flex items-center gap-1"
+                          >
+                            <Settings2 className="h-3 w-3" /> Manage
+                          </button>
+                          <button 
+                            onClick={() => handleToggle(product.id)}
+                            className={`text-xs px-2 py-1 rounded-full font-medium ${product.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                          >
+                            {product.isAvailable ? 'Available' : 'Sold out'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -328,6 +339,13 @@ export default function DashboardCatalog() {
               )}
             </div>
           </div>
+        )}
+        {managingProduct && (
+          <ProductEditorPanel
+            product={managingProduct}
+            onClose={() => setManagingProduct(null)}
+            onSaved={() => queryClient.invalidateQueries({ queryKey: getGetBakerProductsQueryKey(bakerId) })}
+          />
         )}
       </div>
     </DashboardLayout>

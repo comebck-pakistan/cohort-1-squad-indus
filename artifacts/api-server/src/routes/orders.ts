@@ -14,6 +14,11 @@ import { triggerPaymentOCRVerification } from "../lib/ocr.js";
 import { AuthenticatedRequest, requireBakerAuth } from "../middlewares/auth.js";
 import { rateLimit } from "../middlewares/rate-limiter.js";
 import { normalizePakistanPhone } from "../lib/phone.js";
+import {
+  recordOrderFeedback,
+  sendDeliveryFeedbackRequest,
+  type ServiceFeedback,
+} from "../lib/order-feedback.js";
 
 const router = Router();
 
@@ -34,6 +39,7 @@ const guestOrderSchema = z.object({
     variant: z.string().trim().max(80).nullable().optional(),
   })).min(1).max(30),
   deliveryDate: z.string().optional(),
+  fulfillmentType: z.enum(["delivery", "pickup"]).optional(),
   specialInstructions: z.string().trim().max(600).optional(),
   source: z.string().trim().max(40).optional(),
 });
@@ -155,6 +161,7 @@ router.post("/orders", rateLimit(15, 15 * 60 * 1000), async (req, res): Promise<
       items: lineItems,
       totalPkr,
       deliveryDate: parsed.data.deliveryDate || null,
+      fulfillmentType: parsed.data.fulfillmentType ?? "delivery",
       specialInstructions: parsed.data.specialInstructions ?? null,
       source: parsed.data.source?.trim() || "web_guest",
       status: "new",
@@ -224,12 +231,15 @@ router.patch("/orders/:orderId/status", requireBakerAuth, async (req, res): Prom
     return;
   }
   const isCancelled = parsed.data.status === "cancelled";
+  const isDelivered = parsed.data.status === "delivered";
   const [order] = await db.update(ordersTable)
     .set({
       status: parsed.data.status,
       cancellationReason: isCancelled ? parsed.data.cancellationReason?.trim() || "Not specified" : null,
       cancelledBy: isCancelled ? parsed.data.cancelledBy?.trim() || "baker" : null,
       cancelledAt: isCancelled ? new Date() : null,
+      deliveredAt: isDelivered ? new Date() : undefined,
+      feedbackRequestedAt: isDelivered ? new Date() : undefined,
     })
     .where(and(eq(ordersTable.id, params.data.orderId), eq(ordersTable.bakerId, (req as AuthenticatedRequest).bakerId!)))
     .returning();
@@ -237,7 +247,73 @@ router.patch("/orders/:orderId/status", requireBakerAuth, async (req, res): Prom
     res.status(404).json({ error: "Order not found" });
     return;
   }
+
+  if (isDelivered) {
+    const [baker] = await db.select().from(bakersTable).where(eq(bakersTable.id, order.bakerId)).limit(1);
+    if (baker) {
+      sendDeliveryFeedbackRequest(order, baker).catch((err) =>
+        console.error("Feedback WhatsApp failed", err),
+      );
+    }
+  }
+
   res.json(formatOrder(order));
+});
+
+// POST /orders/:orderId/feedback — buyer rates service after delivery
+router.post("/orders/:orderId/feedback", rateLimit(20, 15 * 60 * 1000), async (req, res): Promise<void> => {
+  const orderId = parseInt(String(req.params.orderId), 10);
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: "Invalid order ID" });
+    return;
+  }
+  const parsed = z.object({
+    feedback: z.enum(["loved_it", "okay", "had_issue"]),
+    note: z.string().trim().max(500).optional(),
+    buyerWhatsapp: z.string().trim().min(10).max(24),
+  }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const phone = normalizePakistanPhone(parsed.data.buyerWhatsapp);
+  if (!phone) {
+    res.status(400).json({ error: "Invalid WhatsApp number." });
+    return;
+  }
+  const updated = await recordOrderFeedback({
+    orderId,
+    feedback: parsed.data.feedback as ServiceFeedback,
+    note: parsed.data.note,
+    buyerWhatsapp: phone,
+  });
+  if (!updated) {
+    res.status(404).json({ error: "Order not found or feedback already submitted." });
+    return;
+  }
+  res.json({ ok: true, message: "Thank you for your feedback!" });
+});
+
+// GET /orders/:orderId/feedback — public status for feedback page
+router.get("/orders/:orderId/feedback", async (req, res): Promise<void> => {
+  const orderId = parseInt(String(req.params.orderId), 10);
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: "Invalid order ID" });
+    return;
+  }
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId)).limit(1);
+  if (!order || order.status !== "delivered") {
+    res.status(404).json({ error: "Order not ready for feedback." });
+    return;
+  }
+  const [baker] = await db.select().from(bakersTable).where(eq(bakersTable.id, order.bakerId)).limit(1);
+  res.json({
+    orderId: order.id,
+    bakerName: baker?.businessName ?? "Bakery",
+    buyerName: order.buyerName,
+    alreadySubmitted: !!order.serviceFeedback,
+    serviceFeedback: order.serviceFeedback,
+  });
 });
 
 // PATCH /orders/:orderId/payment

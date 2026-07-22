@@ -999,6 +999,12 @@ components:
         advancePercentage: { type: integer }
         paymentDetails: { type: string }
         blockedDates: { type: array, items: { type: string, format: date } }
+        pickupAddress: { type: string }
+        allowPickup: { type: boolean }
+        allowDelivery: { type: boolean }
+        cancellationAllowed: { type: boolean }
+        cancellationHoursBefore: { type: integer }
+        cancellationPolicy: { type: string }
         socialLinks:
           type: object
           properties:
@@ -1063,6 +1069,12 @@ components:
         category: { type: string }
         occasionTags: { type: array, items: { type: string } }
         dietaryTags: { type: array, items: { type: string } }
+        ingredients: { type: array, items: { type: string } }
+        allergens: { type: array, items: { type: string } }
+        suggestionTags: { type: array, items: { type: string } }
+        pickupAvailable: { type: boolean }
+        deliveryAvailable: { type: boolean }
+        leadTimeHours: { type: ["integer", "null"] }
         photoUrl: { type: ["string", "null"] }
         totalOrders: { type: integer }
         isBestSeller: { type: boolean }
@@ -1086,6 +1098,12 @@ components:
         category: { type: string }
         occasionTags: { type: array, items: { type: string } }
         dietaryTags: { type: array, items: { type: string } }
+        ingredients: { type: array, items: { type: string } }
+        allergens: { type: array, items: { type: string } }
+        suggestionTags: { type: array, items: { type: string } }
+        pickupAvailable: { type: boolean }
+        deliveryAvailable: { type: boolean }
+        leadTimeHours: { type: integer }
         photoUrl: { type: string }
 
     ProductUpdate:
@@ -1102,6 +1120,12 @@ components:
         category: { type: string }
         occasionTags: { type: array, items: { type: string } }
         dietaryTags: { type: array, items: { type: string } }
+        ingredients: { type: array, items: { type: string } }
+        allergens: { type: array, items: { type: string } }
+        suggestionTags: { type: array, items: { type: string } }
+        pickupAvailable: { type: boolean }
+        deliveryAvailable: { type: boolean }
+        leadTimeHours: { type: ["integer", "null"] }
         photoUrl: { type: string }
         displayOrder: { type: integer }
 
@@ -1142,6 +1166,10 @@ components:
         paymentScreenshotUrl: { type: ["string", "null"] }
         advancePaid: { type: boolean }
         requireAdvance: { type: boolean }
+        fulfillmentType: { type: string, enum: [delivery, pickup] }
+        deliveredAt: { type: ["string", "null"], format: date-time }
+        serviceFeedback: { type: ["string", "null"], enum: [loved_it, okay, had_issue] }
+        feedbackNote: { type: ["string", "null"] }
         createdAt: { type: string }
         updatedAt: { type: string }
 
@@ -1166,6 +1194,7 @@ components:
         paymentScreenshotUrl: { type: string }
         advancePaid: { type: boolean }
         requireAdvance: { type: boolean }
+        fulfillmentType: { type: string, enum: [delivery, pickup] }
 
     OrderStatusUpdate:
       type: object

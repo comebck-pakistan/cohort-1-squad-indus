@@ -243,10 +243,36 @@ CREATE TABLE IF NOT EXISTS sweet_tooth.baker_reminders (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS sweet_tooth.inventory_items (
+  id SERIAL PRIMARY KEY,
+  baker_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  unit TEXT NOT NULL DEFAULT 'pcs',
+  qty_in_stock INTEGER NOT NULL DEFAULT 0,
+  reorder_level INTEGER NOT NULL DEFAULT 0,
+  unit_cost_pkr INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS sweet_tooth.ledger_entries (
+  id SERIAL PRIMARY KEY,
+  baker_id INTEGER NOT NULL,
+  type TEXT NOT NULL DEFAULT 'expense',
+  category TEXT NOT NULL DEFAULT 'general',
+  description TEXT,
+  amount_pkr INTEGER NOT NULL,
+  entry_date DATE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS knowledge_chunks_baker_idx ON sweet_tooth.knowledge_chunks (baker_id);
 CREATE INDEX IF NOT EXISTS baker_goals_baker_idx ON sweet_tooth.baker_goals (baker_id);
 CREATE INDEX IF NOT EXISTS baker_notes_baker_idx ON sweet_tooth.baker_notes (baker_id);
 CREATE INDEX IF NOT EXISTS baker_reminders_baker_idx ON sweet_tooth.baker_reminders (baker_id);
+CREATE INDEX IF NOT EXISTS inventory_items_baker_idx ON sweet_tooth.inventory_items (baker_id);
+CREATE INDEX IF NOT EXISTS ledger_entries_baker_idx ON sweet_tooth.ledger_entries (baker_id);
+CREATE INDEX IF NOT EXISTS ledger_entries_date_idx ON sweet_tooth.ledger_entries (entry_date);
 
 ALTER TABLE sweet_tooth.customers ADD COLUMN IF NOT EXISTS is_at_risk BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE sweet_tooth.bakers ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;

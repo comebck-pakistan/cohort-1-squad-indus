@@ -4,6 +4,7 @@ import { db, ordersTable } from "@workspace/db";
 import { GetBakerAnalyticsParams, GetOrderSourcesParams } from "@workspace/api-zod";
 import { requireBakerAuth, requireBakerOwnership } from "../middlewares/auth.js";
 import { buildBakerAnalytics } from "../lib/analytics-engine.js";
+import { buildFeedbackAnalytics } from "../lib/order-feedback.js";
 
 const router = Router();
 
@@ -41,6 +42,17 @@ router.get("/analytics/baker/:bakerId/sources", requireBakerAuth, requireBakerOw
     percentage: total > 0 ? Math.round((stats.orders / total) * 100) : 0,
   }));
   res.json(sources);
+});
+
+// GET /analytics/baker/:bakerId/feedback
+router.get("/analytics/baker/:bakerId/feedback", requireBakerAuth, requireBakerOwnership, async (req, res): Promise<void> => {
+  const bakerId = parseInt(String(req.params.bakerId), 10);
+  if (isNaN(bakerId)) {
+    res.status(400).json({ error: "Invalid baker ID" });
+    return;
+  }
+  const orders = await db.select().from(ordersTable).where(eq(ordersTable.bakerId, bakerId));
+  res.json(buildFeedbackAnalytics(orders));
 });
 
 export default router;

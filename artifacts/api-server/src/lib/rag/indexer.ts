@@ -16,16 +16,29 @@ function productChunks(product: typeof productsTable.$inferSelect): ChunkDraft[]
     ? sizes.map((s) => `${s.label}: PKR ${s.pricePkr}`).join(", ")
     : `PKR ${product.basePricePkr}`;
 
+  const leadParts: string[] = [];
+  if (product.leadTimeDays > 0) leadParts.push(`${product.leadTimeDays} day(s)`);
+  if (product.leadTimeHours && product.leadTimeHours > 0) leadParts.push(`${product.leadTimeHours} hour(s)`);
+  const leadText = leadParts.length ? `Ready in: ${leadParts.join(" + ")}.` : "";
+
+  const fulfillment: string[] = [];
+  if (product.pickupAvailable !== false) fulfillment.push("pickup from bakery");
+  if (product.deliveryAvailable !== false) fulfillment.push("home delivery");
+
   const content = [
     `Product: ${product.name}`,
     product.description ? `Description: ${product.description}` : "",
     `Category: ${product.category}`,
     `Pricing: ${sizeText}`,
     product.isEgglessAvailable ? "Eggless version available." : "",
-    product.leadTimeDays > 0 ? `Lead time: ${product.leadTimeDays} day(s).` : "",
+    leadText,
+    fulfillment.length ? `Fulfillment: ${fulfillment.join(" or ")}.` : "",
+    product.ingredients?.length ? `Ingredients: ${product.ingredients.join(", ")}.` : "",
+    product.allergens?.length ? `Allergens: ${product.allergens.join(", ")}.` : "",
+    product.dietaryTags?.length ? `Dietary labels: ${product.dietaryTags.join(", ")}` : "",
+    product.suggestionTags?.length ? `Good for: ${product.suggestionTags.join(", ")}` : "",
     product.occasionTags?.length ? `Occasions: ${product.occasionTags.join(", ")}` : "",
-    product.dietaryTags?.length ? `Dietary: ${product.dietaryTags.join(", ")}` : "",
-    product.isAvailable ? "Status: in stock." : "Status: sold out.",
+    product.isAvailable ? "Status: available to order." : "Status: currently unavailable — do not accept new orders for this item.",
   ].filter(Boolean).join("\n");
 
   return [{
@@ -59,6 +72,7 @@ export async function buildBakerKnowledgeDrafts(bakerId: number): Promise<ChunkD
     metadata: { businessName: baker.businessName },
   });
 
+  const config = (baker.agentConfig ?? {}) as Record<string, unknown>;
   drafts.push({
     sourceType: "policy",
     sourceId: baker.id,
@@ -67,6 +81,19 @@ export async function buildBakerKnowledgeDrafts(bakerId: number): Promise<ChunkD
       `Payment policy: ${baker.codPolicy ?? "Cash on delivery (COD)."}`,
       baker.returnPolicy ? `Return policy: ${baker.returnPolicy}` : "",
       `Max orders per day: ${baker.maxOrdersPerDay}`,
+      config.cancellationPolicy
+        ? `Cancellation policy: ${config.cancellationPolicy}`
+        : config.cancellationAllowed === false
+          ? "Orders cannot be cancelled once confirmed."
+          : config.cancellationHoursBefore
+            ? `Orders may be cancelled up to ${config.cancellationHoursBefore} hours before delivery.`
+            : "",
+      config.pickupAddress ? `Pickup address: ${config.pickupAddress}` : "",
+      config.allowPickup === false ? "Pickup not available." : "Pickup available.",
+      config.allowDelivery === false ? "Home delivery not available." : "Home delivery available where listed.",
+      config.availabilityHours ? `Kitchen hours: ${config.availabilityHours}` : "",
+      config.dietaryPolicy ? `Dietary policy: ${config.dietaryPolicy}` : "",
+      config.activeOffers ? `Current offers: ${config.activeOffers}` : "",
     ].filter(Boolean).join("\n"),
     metadata: { type: "policy" },
   });

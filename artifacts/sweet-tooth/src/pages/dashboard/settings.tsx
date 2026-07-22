@@ -1,9 +1,12 @@
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { PlanBadge } from "@/components/marketing/pricing-section";
 import { useBuyerSession } from "@/hooks/use-session";
 import { useGetBaker, useUpdateBaker, getGetBakerQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { Copy, Facebook, Instagram, QrCode, Share2 } from "lucide-react";
+import { Link } from "wouter";
+import { Copy, Facebook, Instagram, QrCode, Share2, Sparkles, ArrowRight } from "lucide-react";
+import { getPlanById, FOUNDER_OFFER_ACTIVE } from "@/lib/pricing-plans";
 
 export default function DashboardSettings() {
   const { bakerId } = useBuyerSession();
@@ -25,6 +28,12 @@ export default function DashboardSettings() {
   const [maxOrdersPerDay, setMaxOrdersPerDay] = useState(10);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [newBlockDate, setNewBlockDate] = useState("");
+  const [pickupAddress, setPickupAddress] = useState("");
+  const [allowPickup, setAllowPickup] = useState(true);
+  const [allowDelivery, setAllowDelivery] = useState(true);
+  const [cancellationAllowed, setCancellationAllowed] = useState(true);
+  const [cancellationHoursBefore, setCancellationHoursBefore] = useState("24");
+  const [cancellationPolicy, setCancellationPolicy] = useState("");
   const shopUrl = typeof window === "undefined" ? "" : `${window.location.origin}/menu/${bakerId}`;
   const qrCodeUrl = shopUrl ? `https://quickchart.io/qr?size=260&text=${encodeURIComponent(shopUrl)}` : "";
 
@@ -69,6 +78,12 @@ export default function DashboardSettings() {
       setMaxOrdersPerDay(baker.maxOrdersPerDay ?? 10);
       const conf = (baker as any).agentConfig ?? {};
       setBlockedDates(conf.blockedDates ?? []);
+      setPickupAddress(conf.pickupAddress ?? "");
+      setAllowPickup(conf.allowPickup !== false);
+      setAllowDelivery(conf.allowDelivery !== false);
+      setCancellationAllowed(conf.cancellationAllowed !== false);
+      setCancellationHoursBefore(String(conf.cancellationHoursBefore ?? 24));
+      setCancellationPolicy(conf.cancellationPolicy ?? "");
       const links = (baker as any).socialLinks ?? {};
       setInstagramUrl(links.instagram ?? "");
       setFacebookUrl(links.facebook ?? "");
@@ -95,6 +110,12 @@ export default function DashboardSettings() {
         socialLinks,
         maxOrdersPerDay,
         blockedDates,
+        pickupAddress: pickupAddress.trim(),
+        allowPickup,
+        allowDelivery,
+        cancellationAllowed,
+        cancellationHoursBefore: parseInt(cancellationHoursBefore, 10) || 0,
+        cancellationPolicy: cancellationPolicy.trim(),
       }
     }, {
       onSuccess: () => {
@@ -120,6 +141,46 @@ export default function DashboardSettings() {
       <div className="p-8 max-w-2xl">
         <h1 className="text-4xl font-bold mb-2 font-serif text-primary">Your kitchen, your rules.</h1>
         <p className="text-muted-foreground mb-8">Manage your profile, delivery areas, and policies.</p>
+
+        {baker && (
+          <div className="mb-8 rounded-xl border border-primary/20 bg-primary/5 p-6 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Your package</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <PlanBadge planId={baker.subscriptionPlan} />
+                  <span className="text-sm text-muted-foreground">
+                    {getPlanById(baker.subscriptionPlan)?.tagline}
+                  </span>
+                </div>
+                {(() => {
+                  const plan = getPlanById(baker.subscriptionPlan) ?? getPlanById("free")!;
+                  return (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {plan.commissionPercent > 0
+                        ? `${plan.commissionPercent}% commission on checkout orders (max ${plan.commissionCapPkr.toLocaleString()} PKR/mo) · `
+                        : "0% commission · "}
+                      Extra AI replies {plan.extraReplyPkr === 2.5 ? "PKR 2.50" : `PKR ${plan.extraReplyPkr}`} each
+                    </p>
+                  );
+                })()}
+              </div>
+              <Link
+                href="/#pricing"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Sparkles className="h-4 w-4" />
+                {baker.subscriptionPlan === "pro" ? "View plans" : "Upgrade"}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            {FOUNDER_OFFER_ACTIVE && baker.subscriptionPlan !== "pro" && (
+              <p className="mt-4 text-xs text-primary font-medium">
+                Founder offer: Ghar Starter PKR 1,499 / 3 months or Pro Kitchen PKR 2,999 / 3 months — first month 0% commission.
+              </p>
+            )}
+          </div>
+        )}
         
         <div className="space-y-6">
           <div className="p-6 rounded-xl border border-border bg-card shadow-sm space-y-4">
@@ -311,6 +372,54 @@ export default function DashboardSettings() {
                 <p className="text-xs text-muted-foreground italic">No dates currently blocked.</p>
               )}
             </div>
+          </div>
+
+          <div className="p-6 rounded-xl border border-border bg-card shadow-sm space-y-4">
+            <h3 className="font-serif text-xl font-bold">Kitchen policies (agent uses these)</h3>
+            <p className="text-xs text-muted-foreground">Delivery, pickup, and cancellation rules are shared with buyers via your AI assistant.</p>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={allowDelivery} onChange={(e) => setAllowDelivery(e.target.checked)} />
+              Offer home delivery
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={allowPickup} onChange={(e) => setAllowPickup(e.target.checked)} />
+              Offer pickup from my kitchen
+            </label>
+            <label className="block text-sm font-medium">
+              Pickup address (shown to buyers)
+              <input
+                value={pickupAddress}
+                onChange={(e) => setPickupAddress(e.target.value)}
+                placeholder="e.g. House 12, Street 5, Gulberg III, Lahore"
+                className="mt-1 w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={cancellationAllowed} onChange={(e) => setCancellationAllowed(e.target.checked)} />
+              Allow order cancellations
+            </label>
+            {cancellationAllowed && (
+              <label className="block text-sm font-medium">
+                Cancel at least how many hours before delivery?
+                <input
+                  type="number"
+                  min={0}
+                  value={cancellationHoursBefore}
+                  onChange={(e) => setCancellationHoursBefore(e.target.value)}
+                  className="mt-1 w-32 px-3 py-2 border border-border rounded-md bg-background text-sm"
+                />
+              </label>
+            )}
+            <label className="block text-sm font-medium">
+              Cancellation policy (plain language)
+              <textarea
+                rows={3}
+                value={cancellationPolicy}
+                onChange={(e) => setCancellationPolicy(e.target.value)}
+                placeholder="e.g. Free cancellation up to 24 hours before delivery. Custom cakes are non-refundable after production starts."
+                className="mt-1 w-full px-3 py-2 border border-border rounded-md bg-background text-sm resize-none"
+              />
+            </label>
           </div>
           
           <button 

@@ -106,7 +106,7 @@ export type BakerUpdateSocialLinks = {
   facebook?: string;
 };
 
-export type BakerUpdateDrop = {
+export type BakerUpdateDropsItem = {
   id: string;
   productId?: number;
   productName?: string;
@@ -137,8 +137,15 @@ export interface BakerUpdate {
   advancePercentage?: number;
   paymentDetails?: string;
   blockedDates?: string[];
+  pickupAddress?: string;
+  allowPickup?: boolean;
+  allowDelivery?: boolean;
+  cancellationAllowed?: boolean;
+  cancellationHoursBefore?: number;
+  cancellationPolicy?: string;
   socialLinks?: BakerUpdateSocialLinks;
-  drops?: BakerUpdateDrop[];
+  /** Flash drops stored in agentConfig (id, product title, release date). */
+  drops?: BakerUpdateDropsItem[];
 }
 
 export interface BakerStats {
@@ -177,6 +184,13 @@ export interface Product {
   category: string;
   occasionTags?: string[];
   dietaryTags?: string[];
+  ingredients?: string[];
+  allergens?: string[];
+  suggestionTags?: string[];
+  pickupAvailable?: boolean;
+  deliveryAvailable?: boolean;
+  /** @nullable */
+  leadTimeHours?: number | null;
   /** @nullable */
   photoUrl?: string | null;
   totalOrders?: number;
@@ -199,6 +213,12 @@ export interface ProductInput {
   category: string;
   occasionTags?: string[];
   dietaryTags?: string[];
+  ingredients?: string[];
+  allergens?: string[];
+  suggestionTags?: string[];
+  pickupAvailable?: boolean;
+  deliveryAvailable?: boolean;
+  leadTimeHours?: number;
   photoUrl?: string;
 }
 
@@ -214,6 +234,13 @@ export interface ProductUpdate {
   category?: string;
   occasionTags?: string[];
   dietaryTags?: string[];
+  ingredients?: string[];
+  allergens?: string[];
+  suggestionTags?: string[];
+  pickupAvailable?: boolean;
+  deliveryAvailable?: boolean;
+  /** @nullable */
+  leadTimeHours?: number | null;
   photoUrl?: string;
   displayOrder?: number;
 }
@@ -227,6 +254,26 @@ export interface OrderItem {
   /** @nullable */
   variant?: string | null;
 }
+
+export type OrderFulfillmentType = typeof OrderFulfillmentType[keyof typeof OrderFulfillmentType];
+
+
+export const OrderFulfillmentType = {
+  delivery: 'delivery',
+  pickup: 'pickup',
+} as const;
+
+/**
+ * @nullable
+ */
+export type OrderServiceFeedback = typeof OrderServiceFeedback[keyof typeof OrderServiceFeedback] | null;
+
+
+export const OrderServiceFeedback = {
+  loved_it: 'loved_it',
+  okay: 'okay',
+  had_issue: 'had_issue',
+} as const;
 
 export interface Order {
   id: number;
@@ -259,9 +306,24 @@ export interface Order {
   paymentScreenshotUrl?: string | null;
   advancePaid?: boolean;
   requireAdvance?: boolean;
+  fulfillmentType?: OrderFulfillmentType;
+  /** @nullable */
+  deliveredAt?: string | null;
+  /** @nullable */
+  serviceFeedback?: OrderServiceFeedback;
+  /** @nullable */
+  feedbackNote?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
+
+export type OrderInputFulfillmentType = typeof OrderInputFulfillmentType[keyof typeof OrderInputFulfillmentType];
+
+
+export const OrderInputFulfillmentType = {
+  delivery: 'delivery',
+  pickup: 'pickup',
+} as const;
 
 export interface OrderInput {
   bakerId: number;
@@ -281,6 +343,7 @@ export interface OrderInput {
   paymentScreenshotUrl?: string;
   advancePaid?: boolean;
   requireAdvance?: boolean;
+  fulfillmentType?: OrderInputFulfillmentType;
 }
 
 export interface OrderStatusUpdate {

@@ -19,6 +19,7 @@ import { useBuyerSession } from "@/hooks/use-session";
 import { liveDashboardQuery, ORDERS_POLL_MS } from "@/lib/dashboard-query";
 import { apiUrl } from "@/lib/api-url";
 import { WhatsAppEmbeddedSignup } from "@/components/whatsapp-embedded-signup";
+import { BaileysDemoPanel } from "@/components/baileys-demo-panel";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
@@ -68,6 +69,7 @@ export default function AgentHub() {
   const [reindexResult, setReindexResult] = useState<KnowledgeReindexResult | null>(null);
   const [reindexError, setReindexError] = useState<string | null>(null);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [baileysConnected, setBaileysConnected] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -381,8 +383,8 @@ export default function AgentHub() {
           />
           <StatusPill
             label="WhatsApp"
-            value={whatsappConnected ? "Connected" : "Not connected"}
-            ok={whatsappConnected}
+            value={whatsappConnected || baileysConnected ? "Connected" : "Not connected"}
+            ok={whatsappConnected || baileysConnected}
           />
           <StatusPill
             label="Saved replies"
@@ -563,7 +565,7 @@ export default function AgentHub() {
               <div>
                 <p className="font-semibold">How buyers talk to you (channel flow)</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your shared menu stays a catalogue. The web assistant is live for questions and bookings. WhatsApp auto-reply is not live until a number is connected and a test message replies. Instagram DMs are coming soon.
+                  Your shared menu stays a catalogue. The web assistant is live for questions and bookings. For demo day you can also link WhatsApp Web (Baileys) from this tab on an always-on API. Meta Cloud WhatsApp stays the production path. Instagram DMs are coming soon.
                 </p>
               </div>
               {(config as unknown as { conversationFlow?: { statusNote?: string } } | undefined)?.conversationFlow?.statusNote && (
@@ -829,8 +831,8 @@ export default function AgentHub() {
                     alert("Upgrade to Kitchen Standard or higher to enable the WhatsApp agent.");
                     return;
                   }
-                  if (!merged.whatsappAgentEnabled && !whatsappConnected) {
-                    alert("Connect a WhatsApp Business number below before enabling the agent.");
+                  if (!merged.whatsappAgentEnabled && !whatsappConnected && !baileysConnected) {
+                    alert("Connect WhatsApp via Meta or the Baileys demo QR before enabling the agent.");
                     return;
                   }
                   setLocalConfig(prev => ({ ...prev, whatsappAgentEnabled: !merged.whatsappAgentEnabled }));
@@ -855,6 +857,10 @@ export default function AgentHub() {
               <WhatsAppEmbeddedSignup onStatusChange={setWhatsappConnected} />
               <p className="text-xs text-muted-foreground">The shared app webhook is configured once by the platform owner; bakers never paste access tokens into this page.</p>
             </div>
+
+            {bakerId ? (
+              <BaileysDemoPanel bakerId={bakerId} onConnectedChange={setBaileysConnected} />
+            ) : null}
 
             {/* Waitlist option */}
             <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-4">

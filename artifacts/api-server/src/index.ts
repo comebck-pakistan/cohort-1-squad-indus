@@ -1,5 +1,6 @@
 import app from "./app.js";
 import { logger } from "./lib/logger.js";
+import { maybeAutostartBaileys } from "./lib/baileys-bridge.js";
 
 if (!process.env.VERCEL) {
   const rawPort = process.env["PORT"] || "8080";
@@ -15,6 +16,9 @@ if (!process.env.VERCEL) {
       process.exit(1);
     }
     logger.info({ port }, "Server listening");
+    void maybeAutostartBaileys().catch((baileysErr) => {
+      logger.error({ err: baileysErr }, "Baileys autostart failed");
+    });
   });
 }
 

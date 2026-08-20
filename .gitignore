@@ -58,3 +58,7 @@ Thumbs.db
 .clerk-keys.local
 .tmp-api.env
 artifacts/api-server/.env.production
+
+# Baileys WhatsApp Web session (demo) — never commit
+.baileys-auth/
+artifacts/api-server/.baileys-auth/

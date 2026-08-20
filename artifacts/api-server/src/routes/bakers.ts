@@ -435,13 +435,13 @@ router.post("/bakers", rateLimit(10, 15 * 60 * 1000), async (req, res): Promise<
     res.status(410).json({ error: "Use managed sign-up to create a bakery account." });
     return;
   }
-  // We expect email and password in request body
+  // Slug is optional — generated from business name when omitted (UI may omit it).
   const schema = z.object({
-    businessName: z.string(),
-    ownerName: z.string(),
-    city: z.string(),
-    whatsappNumber: z.string(),
-    slug: z.string(),
+    businessName: z.string().min(2).max(120),
+    ownerName: z.string().min(2).max(120),
+    city: z.string().min(2).max(80),
+    whatsappNumber: z.string().min(10).max(20),
+    slug: z.string().min(2).max(60).optional(),
     email: z.string().email(),
     password: z.string().min(12).max(128),
     tagline: z.string().optional(),
@@ -459,7 +459,7 @@ router.post("/bakers", rateLimit(10, 15 * 60 * 1000), async (req, res): Promise<
     res.status(400).json({ error: "Enter a valid Pakistani WhatsApp number, for example +92 300 1234567." });
     return;
   }
-  const { password, whatsappNumber: _whatsappNumber, ...rest } = parsed.data;
+  const { password, whatsappNumber: _whatsappNumber, slug: rawSlug, ...rest } = parsed.data;
   const passwordHash = hashPassword(password);
   const phoneVariants = phoneLookupVariants(parsed.data.whatsappNumber, normalizedPhone);
   const [existingBaker] = await db.select({ id: bakersTable.id }).from(bakersTable).where(or(
@@ -473,7 +473,8 @@ router.post("/bakers", rateLimit(10, 15 * 60 * 1000), async (req, res): Promise<
 
   try {
     const email = rest.email.trim().toLowerCase();
-    const slugBase = rest.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "bakery";
+    const slugSource = (rawSlug?.trim() || rest.businessName).toLowerCase();
+    const slugBase = slugSource.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "bakery";
     const slug = `${slugBase}-${crypto.randomBytes(4).toString("hex")}`;
     const [baker] = await db.insert(bakersTable).values({
       ...rest,
@@ -493,6 +494,51 @@ router.post("/bakers", rateLimit(10, 15 * 60 * 1000), async (req, res): Promise<
         preferredCustomerChannel: "web",
       } as never,
     }).returning();
+
+    // Starter menu so a new baker can share /menu/:id and take a test order immediately.
+    await db.insert(productsTable).values([
+      {
+        bakerId: baker.id,
+        name: "Chocolate Fudge Cake",
+        description: "Rich chocolate cake with fudge frosting. Edit this in Catalog to match your kitchen.",
+        basePricePkr: 3500,
+        sizes: [
+          { label: "1 pound", pricePkr: 3500 },
+          { label: "2 pound", pricePkr: 6500 },
+        ],
+        variants: ["With walnuts", "Without nuts"],
+        isEgglessAvailable: true,
+        isAvailable: true,
+        leadTimeDays: 1,
+        category: "Cakes",
+        occasionTags: ["Birthday", "Casual"],
+        dietaryTags: ["Contains dairy", "Contains gluten"],
+        suggestionTags: ["Birthday"],
+        displayOrder: 0,
+      },
+      {
+        bakerId: baker.id,
+        name: "Classic Brownies (box of 6)",
+        description: "Dense chocolate brownies. Good for gifting. Edit price and flavours in Catalog.",
+        basePricePkr: 1200,
+        sizes: [{ label: "Box of 6", pricePkr: 1200 }],
+        variants: ["Plain", "Walnut"],
+        isEgglessAvailable: false,
+        isAvailable: true,
+        leadTimeDays: 1,
+        category: "Brownies",
+        occasionTags: ["Gift", "Casual"],
+        dietaryTags: ["Contains eggs", "Contains dairy"],
+        suggestionTags: ["Gift"],
+        displayOrder: 1,
+      },
+    ]);
+
+    try {
+      await rebuildBakerKnowledgeIndex(baker.id);
+    } catch (indexError) {
+      console.error("Starter knowledge index failed", indexError);
+    }
     
     const token = signToken({ bakerId: baker.id, email: baker.email, role: "owner" });
     res.status(201).json({ token, baker: { ...toAuthenticatedBaker(baker), deliveryAreas: baker.deliveryAreas ?? [] } });

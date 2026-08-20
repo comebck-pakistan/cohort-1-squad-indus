@@ -1714,7 +1714,7 @@ components:
 
     BakerInput:
       type: object
-      required: [businessName, ownerName, city, whatsappNumber, slug, email, password]
+      required: [businessName, ownerName, city, whatsappNumber, email, password]
       properties:
         businessName: { type: string }
         ownerName: { type: string }

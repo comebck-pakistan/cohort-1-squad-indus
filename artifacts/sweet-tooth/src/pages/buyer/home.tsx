@@ -216,25 +216,25 @@ function HeroSection() {
               className="mt-6 flex flex-col gap-3 sm:mt-9 sm:flex-row lg:flex-wrap"
             >
               <Link
-                href="/waitlist"
+                href="/dashboard/register"
                 className="group inline-flex min-h-12 w-full items-center justify-center gap-4 rounded-xl bg-background px-5 py-3 text-sm font-bold text-primary shadow-md transition hover:-translate-y-0.5 hover:bg-secondary hover:text-secondary-foreground sm:min-h-14 sm:w-auto sm:px-8"
               >
-                Join the waitlist
+                Create a free bakery account
                 <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
 
               <Link
-                href="/dashboard/register"
+                href="/menu/1"
                 className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-primary-foreground/25 px-5 py-3 text-sm font-bold text-primary-foreground transition hover:border-secondary hover:text-secondary sm:min-h-14 sm:w-auto sm:px-8"
               >
-                Create a free account
+                Try as a customer
               </Link>
 
               <Link
-                href="/review"
+                href="/dashboard/login"
                 className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-primary-foreground/25 px-5 py-3 text-sm font-bold text-primary-foreground transition hover:border-secondary hover:text-secondary sm:min-h-14 sm:w-auto sm:px-8"
               >
-                Review the app
+                Baker login
               </Link>
             </motion.div>
 

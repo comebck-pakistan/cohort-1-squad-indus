@@ -2,7 +2,9 @@ import { Router, type Request, type Response } from "express";
 import { requireBakerAuth, requireBakerOwnership } from "../middlewares/auth.js";
 import {
   getBaileysStatus,
+  isBaileysConfigured,
   isBaileysConnectedForBaker,
+  isBaileysRuntimeSupported,
   startBaileysBridge,
   stopBaileysBridge,
 } from "../lib/baileys-bridge.js";
@@ -19,7 +21,30 @@ function bridgeSecret(): string | undefined {
   return process.env.BAILEYS_BRIDGE_SECRET?.trim() || undefined;
 }
 
-/** On Vercel, forward Baileys control to an always-on worker that holds the WhatsApp socket. */
+function isBaileysWorkerProcess(): boolean {
+  return process.env.BAILEYS_WORKER === "1" || process.env.BAILEYS_WORKER === "true";
+}
+
+/** Vercel (or any API without a live socket) forwards control to the always-on worker. */
+function shouldProxyToBridge(): boolean {
+  if (isBaileysWorkerProcess()) return false;
+  if (!bridgeBaseUrl()) return false;
+  // Prefer local socket when this process can host Baileys itself.
+  if (isBaileysConfigured() && isBaileysRuntimeSupported()) return false;
+  return true;
+}
+
+function assertBridgeSecret(req: Request, res: Response): boolean {
+  const expected = bridgeSecret();
+  if (!expected) return true;
+  const got = req.header("x-baileys-bridge-secret");
+  if (got !== expected) {
+    res.status(401).json({ error: "Invalid Baileys bridge secret." });
+    return false;
+  }
+  return true;
+}
+
 async function proxyToBridge(
   req: Request,
   res: Response,
@@ -27,13 +52,11 @@ async function proxyToBridge(
   method: "GET" | "POST",
   suffix: "status" | "start" | "logout",
 ): Promise<boolean> {
-  const base = bridgeBaseUrl();
-  if (!base) return false;
+  if (!shouldProxyToBridge()) return false;
 
+  const base = bridgeBaseUrl()!;
   const url = `${base}/api/bakers/${bakerId}/baileys/${suffix}`;
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-  };
+  const headers: Record<string, string> = { Accept: "application/json" };
   const auth = req.header("authorization");
   if (auth) headers.Authorization = auth;
   const secret = bridgeSecret();
@@ -43,29 +66,46 @@ async function proxyToBridge(
     const upstream = await fetch(url, { method, headers });
     const text = await upstream.text();
     res.status(upstream.status);
-    const contentType = upstream.headers.get("content-type") || "application/json";
-    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
     res.send(text || "{}");
   } catch (error) {
     res.status(502).json({
       error:
-        "Baileys bridge is unreachable. Keep the always-on worker running (Railway/Fly) and check BAILEYS_BRIDGE_URL.",
+        "Baileys bridge is unreachable. Start the always-on worker (Docker/Railway) and check BAILEYS_BRIDGE_URL.",
       detail: error instanceof Error ? error.message : String(error),
+      docs: "/docs/baileys-bridge.md",
     });
   }
   return true;
 }
 
 function vercelCannotHostSocket(): boolean {
-  return Boolean(process.env.VERCEL) && !bridgeBaseUrl();
+  return Boolean(process.env.VERCEL) && !shouldProxyToBridge() && !isBaileysWorkerProcess();
 }
 
-/** Status for the baker that owns the demo session. */
+/** Unauthenticated health for Docker/Railway healthchecks. */
+router.get("/baileys/health", (_req, res): void => {
+  const status = getBaileysStatus();
+  res.json({
+    ok: true,
+    worker: isBaileysWorkerProcess() || (isBaileysConfigured() && isBaileysRuntimeSupported()),
+    bridgeProxy: shouldProxyToBridge(),
+    bridgeUrlConfigured: Boolean(bridgeBaseUrl()),
+    baileys: {
+      status: status.status,
+      bakerId: status.bakerId,
+      phoneNumber: status.phoneNumber,
+      available: status.available,
+    },
+  });
+});
+
 router.get(
   "/bakers/:bakerId/baileys/status",
   requireBakerAuth,
   requireBakerOwnership,
   async (req, res): Promise<void> => {
+    if (!assertBridgeSecret(req, res)) return;
     const bakerId = Number(req.params.bakerId);
     if (await proxyToBridge(req, res, bakerId, "GET", "status")) return;
 
@@ -80,10 +120,11 @@ router.get(
         qrDataUrl: null,
         phoneNumber: null,
         lastError:
-          "WhatsApp Web (Baileys) needs a persistent socket. Vercel serverless cannot keep it open.",
+          "WhatsApp Web (Baileys) needs the always-on bridge. Vercel serverless cannot keep the socket open.",
         note:
-          "Set BAILEYS_BRIDGE_URL on Vercel to your always-on API (Railway/Fly) that runs with BAILEYS_ENABLED=1. Or use Meta Embedded Signup for native Vercel WhatsApp.",
+          "Run Dockerfile.baileys / docker-compose.baileys.yml or Railway, then set BAILEYS_BRIDGE_URL on Vercel. See docs/baileys-bridge.md.",
         demoOnly: true,
+        bridgeMode: "unavailable",
       });
       return;
     }
@@ -95,6 +136,7 @@ router.get(
       connectedForThisBaker: isBaileysConnectedForBaker(bakerId),
       qrDataUrl: mine ? status.qrDataUrl : null,
       phoneNumber: mine ? status.phoneNumber : null,
+      bridgeMode: isBaileysWorkerProcess() ? "worker" : "local",
     });
   },
 );
@@ -104,13 +146,14 @@ router.post(
   requireBakerAuth,
   requireBakerOwnership,
   async (req, res): Promise<void> => {
+    if (!assertBridgeSecret(req, res)) return;
     const bakerId = Number(req.params.bakerId);
     if (await proxyToBridge(req, res, bakerId, "POST", "start")) return;
 
     if (vercelCannotHostSocket()) {
       res.status(503).json({
         error:
-          "Cannot start Baileys on Vercel. Deploy the API as an always-on worker (Railway/Fly), set BAILEYS_ENABLED=1 there, then set BAILEYS_BRIDGE_URL on Vercel to that worker URL.",
+          "Cannot start Baileys on Vercel. Start the bridge worker (docker compose -f docker-compose.baileys.yml up), then set BAILEYS_BRIDGE_URL on Vercel.",
       });
       return;
     }
@@ -118,14 +161,14 @@ router.post(
     const configured = Number(process.env.BAILEYS_BAKER_ID || "0");
     if (configured > 0 && configured !== bakerId) {
       res.status(403).json({
-        error: `This demo bridge is locked to baker #${configured}. Set BAILEYS_BAKER_ID=${bakerId} on the API host to use your bakery.`,
+        error: `This demo bridge is locked to baker #${configured}. Set BAILEYS_BAKER_ID=${bakerId} on the worker.`,
       });
       return;
     }
     process.env.BAILEYS_BAKER_ID = String(bakerId);
     process.env.BAILEYS_ENABLED = "1";
     const status = await startBaileysBridge();
-    res.json(status);
+    res.json({ ...status, bridgeMode: isBaileysWorkerProcess() ? "worker" : "local" });
   },
 );
 
@@ -134,6 +177,7 @@ router.post(
   requireBakerAuth,
   requireBakerOwnership,
   async (req, res): Promise<void> => {
+    if (!assertBridgeSecret(req, res)) return;
     const bakerId = Number(req.params.bakerId);
     if (await proxyToBridge(req, res, bakerId, "POST", "logout")) return;
 
@@ -149,7 +193,7 @@ router.post(
       return;
     }
     const status = await stopBaileysBridge(true);
-    res.json(status);
+    res.json({ ...status, bridgeMode: isBaileysWorkerProcess() ? "worker" : "local" });
   },
 );
 

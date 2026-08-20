@@ -62,3 +62,5 @@ artifacts/api-server/.env.production
 # Baileys WhatsApp Web session (demo) — never commit
 .baileys-auth/
 artifacts/api-server/.baileys-auth/
+.env.baileys
+.env.baileys.local

@@ -12,6 +12,7 @@ type BaileysStatus = {
   lastError: string | null;
   connectedForThisBaker?: boolean;
   note: string;
+  bridgeMode?: "worker" | "local" | "unavailable" | "proxy";
 };
 
 type Props = {
@@ -78,18 +79,36 @@ export function BaileysDemoPanel({ bakerId, onConnectedChange }: Props) {
   }
 
   const connected = status?.connectedForThisBaker === true;
+  const bridgeMissing = status?.bridgeMode === "unavailable" || status?.status === "error";
 
   return (
     <div className="p-5 rounded-xl border border-border bg-card shadow-sm space-y-4">
       <h3 className="font-semibold flex items-center gap-2">
         <QrCode className="w-4 h-4 text-muted-foreground" />
-        Demo day: WhatsApp Web (Baileys)
+        Demo day: WhatsApp Web (Baileys bridge)
       </h3>
       <p className="text-xs text-muted-foreground">
-        Unofficial WhatsApp Web for demo day. The Sweet Tooth app stays on Vercel; the WhatsApp
-        socket must run on an always-on worker. Set <code>BAILEYS_BRIDGE_URL</code> on Vercel to
-        that worker, or use Meta for fully native Vercel WhatsApp.
+        Unofficial WhatsApp Web for demo day. App stays on Vercel; the WhatsApp socket runs on the
+        Baileys bridge worker (Docker or Railway).
       </p>
+
+      {bridgeMissing ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 space-y-1">
+          <p className="font-medium">Bridge not connected yet</p>
+          <ol className="list-decimal list-inside space-y-0.5 text-amber-900">
+            <li>
+              Copy <code>.env.baileys.example</code> → <code>.env.baileys</code> (same{" "}
+              <code>DATABASE_URL</code> + <code>JWT_SECRET</code> as Vercel).
+            </li>
+            <li>
+              Run <code>pnpm baileys:bridge</code> or deploy <code>Dockerfile.baileys</code> on Railway.
+            </li>
+            <li>
+              Set <code>BAILEYS_BRIDGE_URL</code> on Vercel to that worker URL, redeploy, then tap Start.
+            </li>
+          </ol>
+        </div>
+      ) : null}
 
       <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs space-y-1">
         <p>
@@ -97,6 +116,7 @@ export function BaileysDemoPanel({ bakerId, onConnectedChange }: Props) {
           <span className={connected ? "text-green-700 font-medium" : "font-medium"}>
             {status?.status ?? "…"}
           </span>
+          {status?.bridgeMode ? ` · mode ${status.bridgeMode}` : ""}
           {status?.phoneNumber ? ` · linked ${status.phoneNumber}` : ""}
         </p>
         <p className="text-muted-foreground">{status?.note}</p>

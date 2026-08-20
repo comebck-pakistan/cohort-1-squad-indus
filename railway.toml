@@ -1,0 +1,19 @@
+# Railway always-on Baileys bridge for Sweet Tooth demo WhatsApp.
+# Create a service from this repo, set root to repo root, and use this config.
+# Required env: DATABASE_URL, JWT_SECRET, BAILEYS_ENABLED=1, BAILEYS_BAKER_ID=1
+# Do NOT set BAILEYS_BRIDGE_URL on this service (that belongs on Vercel only).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.baileys"
+
+[deploy]
+healthcheckPath = "/api/baileys/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[variables]
+BAILEYS_ENABLED = "1"
+BAILEYS_WORKER = "1"
+PORT = "8080"

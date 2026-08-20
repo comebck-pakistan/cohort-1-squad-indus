@@ -51,6 +51,8 @@ export function isBaileysConfigured(): boolean {
 
 export function isBaileysRuntimeSupported(): boolean {
   // Persistent WebSocket sessions do not survive Vercel serverless invocations.
+  // BAILEYS_WORKER=1 marks an always-on Docker/Railway process.
+  if (process.env.BAILEYS_WORKER === "1" || process.env.BAILEYS_WORKER === "true") return true;
   return !process.env.VERCEL;
 }
 
@@ -105,8 +107,8 @@ export function getBaileysStatus(): BaileysStatus {
     note: enabled
       ? isBaileysRuntimeSupported()
         ? "Unofficial WhatsApp Web bridge for demo day. Scan the QR once, then message this number."
-        : "Baileys needs an always-on API host (local/Railway). It cannot stay connected on Vercel Hobby."
-      : "Set BAILEYS_ENABLED=1 and BAILEYS_BAKER_ID on the always-on API to use the demo bridge.",
+        : "Baileys needs the always-on bridge worker (Docker/Railway). Set BAILEYS_BRIDGE_URL on Vercel — see docs/baileys-bridge.md."
+      : "Set BAILEYS_ENABLED=1 and BAILEYS_BAKER_ID on the always-on bridge worker, then BAILEYS_BRIDGE_URL on Vercel.",
   };
 }
 

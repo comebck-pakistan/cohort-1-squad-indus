@@ -1,0 +1,29 @@
+# Local always-on Baileys bridge (WhatsApp Web socket).
+# Copy .env.baileys.example → .env.baileys and fill DATABASE_URL + JWT_SECRET.
+#
+#   docker compose -f docker-compose.baileys.yml up --build
+#
+# Then on Vercel (or local frontend API):
+#   BAILEYS_BRIDGE_URL=http://localhost:8088
+# For phone demos from the internet, expose with cloudflared/ngrok and use that URL.
+
+services:
+  baileys-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.baileys
+    ports:
+      - "8088:8080"
+    env_file:
+      - .env.baileys
+    environment:
+      BAILEYS_ENABLED: "1"
+      BAILEYS_WORKER: "1"
+      BAILEYS_AUTH_DIR: /data/baileys-auth
+      PORT: "8080"
+    volumes:
+      - baileys_auth:/data/baileys-auth
+    restart: unless-stopped
+
+volumes:
+  baileys_auth:

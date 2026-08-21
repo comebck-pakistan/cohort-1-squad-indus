@@ -41,6 +41,7 @@ if (publishableKey && secretKey && shouldMountClerkMiddleware()) {
 const allowedOrigins = new Set([
   process.env.FRONTEND_URL,
   "https://cohort-1-squad-indus-sweet-tooth.vercel.app",
+  "https://cohort-1-squad-indus.vercel.app",
   ...(process.env.NODE_ENV !== "production" && !process.env.VERCEL
     ? ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5180", "http://127.0.0.1:5180"]
     : []),
@@ -49,10 +50,12 @@ const allowedOrigins = new Set([
 function isAllowedBrowserOrigin(origin: string): boolean {
   if (allowedOrigins.has(origin)) return true;
   try {
-    // Permit only this project's Vercel preview deployments, not arbitrary
-    // Vercel sites. This keeps preview QA functional without opening CORS.
     const host = new URL(origin).hostname;
-    return /^cohort-1-squad-indus-sweet-tooth-[a-z0-9-]+\.vercel\.app$/i.test(host);
+    return (
+      /^cohort-1-squad-indus-sweet-tooth-[a-z0-9-]+\.vercel\.app$/i.test(host) ||
+      /^cohort-1-squad-indus-[a-z0-9-]+\.vercel\.app$/i.test(host) ||
+      /^cohort-1-squad-indus-api-server[a-z0-9-]*-[a-z0-9-]+\.vercel\.app$/i.test(host)
+    );
   } catch {
     return false;
   }
@@ -60,12 +63,12 @@ function isAllowedBrowserOrigin(origin: string): boolean {
 
 app.use(cors({
   origin(origin, callback) {
-    // Requests without an Origin header include server-to-server webhooks and
-    // health checks. Browser requests must come from the configured UI.
     if (!origin || isAllowedBrowserOrigin(origin)) return callback(null, true);
     return callback(null, false);
   },
   methods: ["GET", "POST", "PATCH", "PUT", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Guest-Token", "X-Baileys-Bridge-Secret", "Accept"],
+  maxAge: 86400,
 }));
 // Meta signs the exact webhook bytes. This parser must run before the global
 // JSON parser so the WhatsApp route can verify the signature safely.

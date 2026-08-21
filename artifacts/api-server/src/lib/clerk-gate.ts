@@ -8,8 +8,12 @@ export function shouldMountClerkMiddleware(): boolean {
 export function isPublicApiWithoutClerk(path: string): boolean {
   const normalized = path.split("?")[0];
   return (
+    normalized === "/api/bakers" ||
     normalized === "/api/bakers/login" ||
     normalized === "/api/bakers/register" ||
+    normalized === "/bakers" ||
+    normalized === "/bakers/login" ||
+    normalized === "/bakers/register" ||
     normalized === "/api/bakers/forgot-password" ||
     normalized === "/api/bakers/reset-password" ||
     normalized === "/api/admin/login" ||

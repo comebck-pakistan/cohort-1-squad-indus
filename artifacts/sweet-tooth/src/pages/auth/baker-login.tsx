@@ -136,7 +136,10 @@ export default function BakerLogin({ initialTab = "login" }: { initialTab?: "log
       const role = response.role === "staff" ? "staff" : "owner";
       finishAuth(response.token, response.baker.id, "password", role, role === "staff" ? "/dashboard/human-inbox" : "/dashboard");
     } catch (cause: unknown) {
-      const message = cause instanceof Error ? cause.message.replace(/^HTTP \d+\s*[^:]*:\s*/, "") : "Invalid email/number or password";
+      const raw = cause instanceof Error ? cause.message.replace(/^HTTP \d+\s*[^:]*:\s*/, "") : "";
+      const message = /failed to fetch|networkerror|load failed/i.test(raw)
+        ? "Could not reach the server. Refresh and try again."
+        : raw;
       setError(message || "Invalid email/number or password");
     } finally {
       setLoading(false);
@@ -168,7 +171,10 @@ export default function BakerLogin({ initialTab = "login" }: { initialTab?: "log
       markBakeryQuestForNewSignup();
       finishAuth(response.token, response.baker.id, "password", "owner", "/dashboard/welcome-features");
     } catch (cause: unknown) {
-      const message = cause instanceof Error ? cause.message.replace(/^HTTP \d+\s*[^:]*:\s*/, "") : "Could not create your bakery account";
+      const raw = cause instanceof Error ? cause.message.replace(/^HTTP \d+\s*[^:]*:\s*/, "") : "";
+      const message = /failed to fetch|networkerror|load failed/i.test(raw)
+        ? "Could not reach the server. Refresh and try again."
+        : raw;
       setError(message || "Could not create your bakery account");
     } finally {
       setLoading(false);

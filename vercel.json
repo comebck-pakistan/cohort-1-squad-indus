@@ -4,8 +4,8 @@
   "outputDirectory": "artifacts/sweet-tooth/dist/public",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "artifacts/api-server/dist/index.mjs"
+      "source": "/api/:path*",
+      "destination": "https://cohort-1-squad-indus-api-server-z3b.vercel.app/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
